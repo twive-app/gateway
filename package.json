@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@twivesdk/backend",
+  "description": "The backend service that connects all twivesdk platforms",
+  "private": true,
+  "author": "aysib07 <dev@aysib07.de>",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "ts-node -r tsconfig-paths/register src/index.ts",
+    "build": "tsup src/index.ts --format cjs --target node16 --out-dir out --dts",
+    "start": "node out/index.js",
+    "build:start": "npm run build && npm run start",
+    "typecheck": "tsc --noEmit",
+    "lint:check": "eslint ./src",
+    "lint:fix": "eslint --fix ./src"
+  },
+  "dependencies": {
+    "axios": "^1.18.0",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "tsup": "^8.5.1",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-angular": "^21.0.2",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.3",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^8.61.1",
+    "@typescript-eslint/parser": "^8.61.1",
+    "eslint": "^10.5.0",
+    "eslint-plugin-unicorn": "^67.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.61.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/twiveSDK/backend.git"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-angular"
+    ],
+    "rules": {
+      "header-max-length": [
+        2,
+        "always",
+        120
+      ],
+      "type-enum": [
+        2,
+        "always",
+        [
+          "feat",
+          "fix",
+          "refactor",
+          "perf",
+          "style",
+          "test",
+          "docs",
+          "build",
+          "chore",
+          "src",
+          "ci",
+          "revert"
+        ]
+      ],
+      "scope-case": [
+        1,
+        "always",
+        "pascal-case"
+      ]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+# IDE-specific files
+.idea/
+.vscode/
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Configuration and environment files
+config.json
+.env
+
+# Build output
+out/
+
+# Others
+test/
+tests/
