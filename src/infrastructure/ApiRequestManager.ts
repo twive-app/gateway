@@ -1,4 +1,4 @@
-import axios, {type AxiosInstance, type AxiosRequestConfig, type AxiosResponse} from "axios";
+import axios, {AxiosHeaders, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse} from "axios";
 import type {ZodType} from "zod";
 
 export class ApiRequestException extends Error {
@@ -10,9 +10,12 @@ export class ApiRequestException extends Error {
 
 export class ApiRequestManager {
     private client: AxiosInstance;
+    private readonly baseURL: string;
 
-    public constructor(defaultConfig: AxiosRequestConfig = {}) {
+    public constructor(baseURL: string, defaultConfig: AxiosRequestConfig = {}) {
+        this.baseURL = baseURL;
         this.client = axios.create({
+            baseURL,
             headers: {
                 "Content-Type": "application/json",
                 ...defaultConfig.headers,
@@ -21,53 +24,80 @@ export class ApiRequestManager {
         });
     }
 
-    public async post<T>(url: string, data: unknown, schema?: ZodType<T>): Promise<T> {
+    public async post<T>(endpoint: string, data: unknown, schema?: ZodType<T>): Promise<T> {
         try {
-            const response: AxiosResponse = await this.client.post(url, data);
+            const response: AxiosResponse = await this.client.post(endpoint, data);
             if (schema) return schema.parse(response.data);
             return response.data as T;
         } catch (error) {
-            throw new ApiRequestException(`POST request to ${url} failed: ${(error as Error).message}`);
+            if (axios.isAxiosError(error)) throw new ApiRequestException(
+                `POST request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`
+            );
+
+            throw new ApiRequestException(`Unexpected error: ${(error as Error).message}`);
         }
     }
 
-    public async get<T>(url: string, schema?: ZodType<T>): Promise<T> {
+    public async get<T>(endpoint: string, schema?: ZodType<T>): Promise<T> {
         try {
-            const response: AxiosResponse = await this.client.get(url);
+            const response: AxiosResponse = await this.client.get(endpoint);
             if (schema) return schema.parse(response.data);
             return response.data as T;
         } catch (error) {
-            throw new ApiRequestException(`GET request to ${url} failed: ${(error as Error).message}`);
+            if (axios.isAxiosError(error)) throw new ApiRequestException(
+                `GET request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`
+            );
+
+            throw new ApiRequestException(`Unexpected error: ${(error as Error).message}`);
         }
     }
 
-    public async put<T>(url: string, data: unknown, schema?: ZodType<T>): Promise<T> {
+    public async put<T>(endpoint: string, data: unknown, schema?: ZodType<T>): Promise<T> {
         try {
-            const response: AxiosResponse = await this.client.put(url, data);
+            const response: AxiosResponse = await this.client.put(endpoint, data);
             if (schema) return schema.parse(response.data);
             return response.data as T;
         } catch (error) {
-            throw new ApiRequestException(`PUT request to ${url} failed: ${(error as Error).message}`);
+            if (axios.isAxiosError(error)) throw new ApiRequestException(
+                `PUT request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`
+            );
+
+            throw new ApiRequestException(`Unexpected error: ${(error as Error).message}`);
         }
     }
 
-    public async delete<T>(url: string, schema?: ZodType<T>): Promise<T> {
+    public async delete<T>(endpoint: string, schema?: ZodType<T>): Promise<T> {
         try {
-            const response: AxiosResponse = await this.client.delete(url);
+            const response: AxiosResponse = await this.client.delete(endpoint);
             if (schema) return schema.parse(response.data);
             return response.data as T;
         } catch (error) {
-            throw new ApiRequestException(`DELETE request to ${url} failed: ${(error as Error).message}`);
+            if (axios.isAxiosError(error)) throw new ApiRequestException(
+                `DELETE request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`
+            );
+
+            throw new ApiRequestException(`Unexpected error: ${(error as Error).message}`);
         }
     }
 
-    public async patch<T>(url: string, data: unknown, schema?: ZodType<T>): Promise<T> {
+    public async patch<T>(endpoint: string, data: unknown, schema?: ZodType<T>): Promise<T> {
         try {
-            const response: AxiosResponse = await this.client.patch(url, data);
+            const response: AxiosResponse = await this.client.patch(endpoint, data);
             if (schema) return schema.parse(response.data);
             return response.data as T;
         } catch (error) {
-            throw new ApiRequestException(`PATCH request to ${url} failed: ${(error as Error).message}`);
+            if (axios.isAxiosError(error)) throw new ApiRequestException(
+                `PATCH request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`
+            );
+
+            throw new ApiRequestException(`Unexpected error: ${(error as Error).message}`);
         }
+    }
+
+    public setHeaders(headers: AxiosHeaders): void {
+        this.client.defaults.headers = {
+            ...this.client.defaults.headers,
+            ...headers,
+        };
     }
 }
