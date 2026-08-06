@@ -1,6 +1,13 @@
 import fs from "node:fs";
 import z from "zod";
 
+export class ConfigException extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "ConfigError";
+    }
+}
+
 export class ConfigManager {
     private readonly path: string;
     private config: Config | undefined;
@@ -13,19 +20,19 @@ export class ConfigManager {
     public initialize(): void {
         const configPath: string = this.path + "/config/config.json";
 
-        if (!fs.existsSync(configPath)) throw new Error("Config file not found");
+        if (!fs.existsSync(configPath)) throw new ConfigException("Config file not found");
 
         const configFile: string = fs.readFileSync(configPath, "utf8");
 
         try {
             this.config = JSON.parse(configFile)
         } catch (error) {
-            throw new Error("Config file is invalid: " + (error as Error).message);
+            throw new ConfigException("Config file is invalid: " + (error as Error).message);
         }
     }
 
     public getConfig(): Config {
-        if (!this.config) throw new Error("Config is not initialized. Call initialize() first");
+        if (!this.config) throw new ConfigException("Config is not initialized. Call initialize() first");
         return this.config;
     }
 }
