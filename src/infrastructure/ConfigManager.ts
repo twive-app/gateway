@@ -25,7 +25,8 @@ export class ConfigManager {
         const configFile: string = fs.readFileSync(configPath, "utf8");
 
         try {
-            this.config = JSON.parse(configFile)
+            const parsedConfig: any = JSON.parse(configFile);
+            this.config = config.parse(parsedConfig);
         } catch (error) {
             throw new ConfigException("Config file is invalid: " + (error as Error).message);
         }
