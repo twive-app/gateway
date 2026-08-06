@@ -8,11 +8,11 @@ export class ApiRequestException extends Error {
     }
 }
 
-export class ApiRequestManager {
-    private client: AxiosInstance;
-    private readonly baseURL: string;
+export abstract class ApiRequestClient {
+    protected client!: AxiosInstance;
+    protected baseURL: string = "";
 
-    public constructor(baseURL: string, defaultConfig: AxiosRequestConfig = {}) {
+    protected init(baseURL: string, defaultConfig: AxiosRequestConfig = {}): void {
         this.baseURL = baseURL;
         this.client = axios.create({
             baseURL,
