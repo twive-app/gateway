@@ -1,4 +1,4 @@
-import axios, {AxiosHeaders, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse} from "axios";
+import axios, {type AxiosHeaders, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse} from "axios";
 import type {ZodType} from "zod";
 
 export class ApiRequestException extends Error {
