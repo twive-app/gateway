@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import z from "zod";
+import {Bean, PostConstruct} from "@infra/BeanManager.ts";
 
 export class ConfigException extends Error {
     constructor(message: string) {
@@ -8,39 +9,34 @@ export class ConfigException extends Error {
     }
 }
 
+@Bean()
 export class ConfigManager {
-    private readonly path: string;
-    private config: Config | undefined;
-
-    public constructor(path: string) {
-        this.path = path;
-        this.config = undefined;
-    }
-
+    private config!: Config;
+    
+    @PostConstruct()
     public initialize(): void {
-        const configPath: string = this.path + "/config/config.json";
+        const configPath: string = (process.env.CONFIG_PATH || ".") + "/config/config.json";
 
         if (!fs.existsSync(configPath)) throw new ConfigException("Config file not found");
 
         const configFile: string = fs.readFileSync(configPath, "utf8");
 
         try {
-            const parsedConfig: any = JSON.parse(configFile);
-            this.config = config.parse(parsedConfig);
+            this.config = configSchema.parse(JSON.parse(configFile));
         } catch (error) {
             throw new ConfigException("Config file is invalid: " + (error as Error).message);
         }
     }
 
-    public getConfig(): Config {
-        if (!this.config) throw new ConfigException("Config is not initialized. Call initialize() first");
+    public get(): Config {
+        if (!this.config) throw new ConfigException("Config is not initialized.");
         return this.config;
     }
 }
 
 export const isDevMode: boolean = process.env.ENVIRONMENT === "dev";
 
-export const config= z.object({
+export const configSchema= z.object({
     postgres: z.object({
         host: z.string(),
         port: z.number(),
@@ -66,4 +62,4 @@ export const config= z.object({
     }),
 });
 
-export type Config = z.infer<typeof config>;
+export type Config = z.infer<typeof configSchema>;

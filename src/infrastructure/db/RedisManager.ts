@@ -1,7 +1,8 @@
 import {createClient, type RedisClientType, type RedisDefaultModules} from "redis";
-import type {Logger} from "@utils/Logger";
-import type {ConfigManager} from "@infra/ConfigManager";
+import type {Logger} from "@utils/Logger.ts";
+import type {ConfigManager} from "@infra/ConfigManager.ts";
 import type {ZodSafeParseResult, ZodType} from "zod";
+import {Autowired, Bean, PostConstruct} from "@infra/BeanManager.ts";
 
 export type RedisClient = RedisClientType<RedisDefaultModules, {}, {}, 3, {}>;
 
@@ -12,19 +13,24 @@ class RedisException extends Error {
     }
 }
 
+@Bean()
 export class RedisManager {
-    private readonly redisClient: Promise<RedisClient>;
-    private readonly logger: Logger;
+    private redisClient!: Promise<RedisClient>;
 
-    public constructor(configManager: ConfigManager, logger: Logger) {
-        this.logger = logger;
+    @Autowired()
+    private configManager!: ConfigManager;
 
+    @Autowired()
+    private logger!: Logger;
+
+    @PostConstruct()
+    public initialize(): void {
         this.redisClient = createClient({
-            url: `redis://${configManager.getConfig().redis.username}:${configManager.getConfig().redis.password}@${configManager.getConfig().redis.host}:${configManager.getConfig().redis.port}/${configManager.getConfig().redis.db}`,
-            database: configManager.getConfig().redis.db,
+            url: `redis://${this.configManager.get().redis.username}:${this.configManager.get().redis.password}@${this.configManager.get().redis.host}:${this.configManager.get().redis.port}/${this.configManager.get().redis.db}`,
+            database: this.configManager.get().redis.db,
             socket: {
                 reconnectStrategy: (retries: number): number => {
-                    const time: number = Math.min(retries * 1000, 3000);
+                    const time: number = Math.min(retries * 1000, 5000);
                     this.logger.warning("REDIS", `Connection was lost. Reconnecting in ${time} (${retries} try).`);
                     return time;
                 },

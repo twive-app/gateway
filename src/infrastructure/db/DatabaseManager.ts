@@ -1,6 +1,7 @@
 import {Sequelize} from "sequelize";
-import type {Logger} from "@utils/Logger";
-import type {ConfigManager} from "@infra/ConfigManager";
+import type {Logger} from "@utils/Logger.ts";
+import type {ConfigManager} from "@infra/ConfigManager.ts";
+import {Autowired, Bean, PostConstruct} from "@infra/BeanManager.ts";
 
 class DatabaseException extends Error {
     constructor(message: string) {
@@ -9,30 +10,35 @@ class DatabaseException extends Error {
     }
 }
 
+@Bean()
 export class DatabaseManager {
-    private readonly sequelize: Sequelize;
-    private readonly logger: Logger;
-    private modelsInitialized = false;
+    private sequelize!: Sequelize;
+    private modelsInitialized: boolean = false;
 
-    public constructor(configManager: ConfigManager, logger: Logger) {
-        this.logger = logger;
+    @Autowired()
+    private configManager!: ConfigManager;
 
+    @Autowired()
+    private logger!: Logger;
+
+    @PostConstruct()
+    public async initialize(): Promise<void> {
         this.sequelize = new Sequelize({
-            host: configManager.getConfig().postgres.host,
-            port: configManager.getConfig().postgres.port,
-            username: configManager.getConfig().postgres.username,
-            password: configManager.getConfig().postgres.password,
-            schema: configManager.getConfig().postgres.schema,
-            database: configManager.getConfig().postgres.database,
+            host: this.configManager.get().postgres.host,
+            port: this.configManager.get().postgres.port,
+            username: this.configManager.get().postgres.username,
+            password: this.configManager.get().postgres.password,
+            schema: this.configManager.get().postgres.schema,
+            database: this.configManager.get().postgres.database,
             dialect: "postgres",
             dialectOptions: {
-                connectTimeout: 10000,
-                requestTimeout: 10000,
+                connectTimeout: 5000,
+                requestTimeout: 5000,
                 multipleStatements: true,
                 useUTC: true,
                 prependSearchPath: true,
-                searchPath: configManager.getConfig().postgres.schema,
-                options: `-c search_path=${configManager.getConfig().postgres.schema},public`,
+                searchPath: this.configManager.get().postgres.schema,
+                options: `-c search_path=${this.configManager.get().postgres.schema},public`,
             },
             define: {
                 charset: "utf8mb4",
@@ -53,13 +59,7 @@ export class DatabaseManager {
                 force: false,
             },
         });
-    }
 
-    public getConnection(): Sequelize {
-        return this.sequelize;
-    }
-
-    public async initialize(): Promise<void> {
         this.initModels();
 
         try {
@@ -68,6 +68,10 @@ export class DatabaseManager {
         } catch (error) {
             throw new DatabaseException(`Failed to establish connection: ${error instanceof Error ? error.message : String(error)}`);
         }
+    }
+
+    public getConnection(): Sequelize {
+        return this.sequelize;
     }
 
     private initModels(): void {

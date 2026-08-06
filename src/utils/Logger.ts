@@ -1,39 +1,34 @@
 import chalk from "chalk";
 import figlet from "figlet";
-import {DateFormatter} from "@utils/DateFormatter";
-import {configManager} from "../index";
+import {formatDate} from "@utils/DateFormatter.ts";
+import {ConfigManager} from "@infra/ConfigManager.ts";
+import {Autowired, Bean} from "@infra/BeanManager.ts";
 
+@Bean()
 export class Logger {
-    private static _instance: Logger;
-
-    public static getInstance(): Logger {
-        if (!Logger._instance) {
-            Logger._instance = new Logger();
-        }
-        return Logger._instance;
-    }
+    @Autowired()
+    private configManager!: ConfigManager;
 
     public header(): void {
         const name = "backend";
 
-        console.log("\n\n", chalk.hex("#3b26f6").bold(figlet.textSync(name, {
+        console.log("\n", chalk.hex("#3b26f6").bold(figlet.textSync(name, {
             font: "Slant",
-            horizontalLayout: "fitted",
+            horizontalLayout: "default",
+            verticalLayout: "default",
             width: 400,
-        })), "\n\n");
+        })), "\n");
     }
 
     private logToConsole(level: keyof typeof LogLevel, thematic: keyof typeof LogThematic, message: string, context: Record<string, unknown>): void {
         const logLevelColor: LogLevel = LogLevel[level];
         const logThematicColor: LogThematic = LogThematic[thematic];
-        const timestamp: string = new DateFormatter(new Date(), {
+        const currentTime: string = formatDate(new Date(), {
             schema: "dd-MM-yyyy HH:mm:ss",
-        }).format();
+        });
 
-        console.log(`${timestamp} [${chalk.hex(logLevelColor)(level)}] [${chalk.hex(logThematicColor)(thematic)}] | ${message}`);
-        if (Object.keys(context).length > 0) {
-            console.log(chalk.hex("#ffffff")("Context: "), context);
-        }
+        console.log(`${currentTime} [${chalk.hex(logLevelColor)(level)}] [${chalk.hex(logThematicColor)(thematic)}] | ${message}`);
+        if (Object.keys(context).length > 0) console.log(chalk.hex("#ffffff")("Context: "), context);
     }
 
     public info(thematic: keyof typeof LogThematic, message: string, context: Record<string, unknown> = {}): void {
@@ -53,9 +48,7 @@ export class Logger {
     }
 
     public debug(thematic: keyof typeof LogThematic, message: string, context: Record<string, unknown> = {}): void {
-        if (configManager.getConfig().logging.debug) {
-            this.logToConsole("DEBUG", thematic, message, context);
-        }
+        if (this.configManager.get().logging.debug) this.logToConsole("DEBUG", thematic, message, context);
     }
 }
 
