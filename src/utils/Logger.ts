@@ -65,4 +65,5 @@ export enum LogThematic {
     DATABASE = "#ff5da6",
     REDIS = "#e74c3c",
     SERVER = "#b9ff4f",
+    TWITCH = "#9146ff",
 }

@@ -5,6 +5,7 @@ import "@infra/DatabaseManager";
 import "@infra/RedisManager";
 import "@utils/Logger";
 import "@infra/ServerManager";
+import "@twicth/TwitchWebhookService";
 
 import {Autowired, MainClass} from "@infra/BeanManager.ts";
 import type {Logger} from "@utils/Logger.ts";
