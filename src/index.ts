@@ -1,8 +1,8 @@
 import "dotenv/config";
 import "@infra/BeanManager";
 import "@infra/ConfigManager";
-import "@infra/db/DatabaseManager";
-import "@infra/db/RedisManager";
+import "@infra/DatabaseManager";
+import "@infra/RedisManager";
 import "@utils/Logger";
 import "@infra/ServerManager";
 

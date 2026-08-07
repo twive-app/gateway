@@ -28,8 +28,8 @@
     "types": ["node"],                                   /* Specify type package names to be included without being referenced in a source file. */
     "baseUrl": ".",                                      /* Base directory to resolve non-absolute module names. */
     "paths": {                                           /* A set of entries that re-map imports to additional lookup locations. */
-      "@infra/*": ["src/infrastructure/*"],
-      "@utils/*": ["src/utils/*"]
-    }
+      "@infra/*": ["src/infrastructure/*", "src/infrastructure/db/*"],
+      "@utils/*": ["src/utils/*"],
+    },
   },
 }
