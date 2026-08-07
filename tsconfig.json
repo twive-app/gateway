@@ -30,7 +30,7 @@
     "paths": {                                           /* A set of entries that re-map imports to additional lookup locations. */
       "@infra/*": ["src/infrastructure/*", "src/infrastructure/db/*"],
       "@utils/*": ["src/utils/*"],
-      "@twicth/*": ["src/twitch/*", "src/twitch/services/*"],
+      "@twitch/*": ["src/twitch/*", "src/twitch/services/*"],
     },
   },
 }
