@@ -52,7 +52,7 @@ export const configSchema= z.object({
         password: z.string(),
         db: z.number(),
     }),
-    webserver: z.object({
+    server: z.object({
         cors: z.object({
             origin: z.array(z.string()),
         }),

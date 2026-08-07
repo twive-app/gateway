@@ -4,9 +4,10 @@ import "@infra/ConfigManager";
 import "@infra/db/DatabaseManager";
 import "@infra/db/RedisManager";
 import "@utils/Logger";
+import "@infra/ServerManager";
 
 import {Autowired, MainClass} from "@infra/BeanManager.ts";
-import {Logger} from "@utils/Logger.ts";
+import type {Logger} from "@utils/Logger.ts";
 import packageJson from "../package.json";
 
 @MainClass()

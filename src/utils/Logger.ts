@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import figlet from "figlet";
 import {formatDate} from "@utils/DateFormatter.ts";
-import {ConfigManager} from "@infra/ConfigManager.ts";
+import type {ConfigManager} from "@infra/ConfigManager.ts";
 import {Autowired, Bean} from "@infra/BeanManager.ts";
 
 @Bean()
@@ -64,5 +64,5 @@ export enum LogThematic {
     SYSTEM = "#3b26f6",
     DATABASE = "#ff5da6",
     REDIS = "#e74c3c",
-    API = "#4fffdf",
+    SERVER = "#b9ff4f",
 }

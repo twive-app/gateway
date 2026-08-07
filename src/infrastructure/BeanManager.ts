@@ -1,10 +1,22 @@
-type PostConstructorDefinition = {
+import type {FastifyInstance, FastifyRequest, FastifyReply} from "fastify";
+
+interface PostConstructorDefinition {
     classToken: string;
     methodName: string;
     handler: () => void|Promise<void>;
-};
+}
 
-type BeansMap =  Map<string, object>;
+type RouteHttpMethod = "get" | "post" | "put" | "delete" | "patch";
+
+interface RouteDefinition {
+    classToken: string;
+    methodName: string;
+    httpMethod: RouteHttpMethod;
+    path: string;
+    handler: (req: FastifyRequest, reply: FastifyReply) => any;
+}
+
+type BeansMap = Map<string, object>;
 type PostConstructorsMap = Map<string, PostConstructorDefinition>;
 
 class BeanException extends Error {
@@ -14,9 +26,10 @@ class BeanException extends Error {
     }
 }
 
-class BeanManager {
+export class BeanManager {
     private static beansMap: BeansMap = new Map<string, object>();
     private static postConstructors: PostConstructorsMap = new Map<string, PostConstructorDefinition>();
+    private static routes: RouteDefinition[] = [];
 
     public static registerBean(token: string, instance: object): void {
         this.beansMap.set(token.toUpperCase(), instance);
@@ -53,6 +66,20 @@ class BeanManager {
                     throw new BeanException(`Error triggering getter ${key}.${prop}: ${(error as Error).message}`);
                 }
             }
+        }
+    }
+
+    public static addRoute(def: RouteDefinition): void {
+        this.routes.push(def);
+    }
+
+    public static registerServerRoutes(server: FastifyInstance): void {
+        for (const route of this.routes) {
+            server[route.httpMethod](route.path, async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+                const instance: unknown = this.getBean(route.classToken);
+                const boundHandler: (req: FastifyRequest, reply: FastifyReply) => any = route.handler.bind(instance);
+                return await boundHandler(request, reply);
+            });
         }
     }
 }
@@ -109,6 +136,21 @@ export function MainClass(token?: string): MainClass {
         BeanManager.registerBean(key, instance);
         BeanManager.triggerGetters(key.toUpperCase(), instance);
         BeanManager.afterStart();
+    };
+}
+
+type Route = (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
+export function Route(method: RouteHttpMethod, path: string): Route {
+    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor): void {
+        const classToken: any = target.constructor.name.toUpperCase();
+
+        BeanManager.addRoute({
+            classToken,
+            methodName: propertyKey,
+            httpMethod: method,
+            path,
+            handler: descriptor.value,
+        });
     };
 }
 
