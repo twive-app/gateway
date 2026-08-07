@@ -83,7 +83,7 @@ export default defineConfig(
                     leadingUnderscore: "allow",
                 }
             ],
-            "@typescript-eslint/no-extraneous-class": "warn",
+            "@typescript-eslint/no-extraneous-class": "off",
             "@typescript-eslint/no-empty-function": "warn",
             "no-var": "error",
             "prefer-const": "error",
@@ -105,6 +105,7 @@ export default defineConfig(
                     avoidEscape: true
                 }
             ],
+            "@typescript-eslint/no-empty-object-type": "off",
         },
-    }
+    },
 );
