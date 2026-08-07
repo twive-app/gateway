@@ -10,7 +10,7 @@ export class ApiRequestException extends Error {
 
 export abstract class ApiRequestClient {
     protected client!: AxiosInstance;
-    protected baseURL: string = "";
+    protected baseURL!: string;
 
     protected init(baseURL: string, defaultConfig: AxiosRequestConfig = {}): void {
         this.baseURL = baseURL;
@@ -31,7 +31,7 @@ export abstract class ApiRequestClient {
             return response.data as T;
         } catch (error) {
             if (axios.isAxiosError(error)) throw new ApiRequestException(
-                `POST request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`
+                `POST request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`,
             );
 
             throw new ApiRequestException(`Unexpected error: ${(error as Error).message}`);
@@ -45,7 +45,7 @@ export abstract class ApiRequestClient {
             return response.data as T;
         } catch (error) {
             if (axios.isAxiosError(error)) throw new ApiRequestException(
-                `GET request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`
+                `GET request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`,
             );
 
             throw new ApiRequestException(`Unexpected error: ${(error as Error).message}`);
@@ -59,7 +59,7 @@ export abstract class ApiRequestClient {
             return response.data as T;
         } catch (error) {
             if (axios.isAxiosError(error)) throw new ApiRequestException(
-                `PUT request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`
+                `PUT request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`,
             );
 
             throw new ApiRequestException(`Unexpected error: ${(error as Error).message}`);
@@ -73,7 +73,7 @@ export abstract class ApiRequestClient {
             return response.data as T;
         } catch (error) {
             if (axios.isAxiosError(error)) throw new ApiRequestException(
-                `DELETE request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`
+                `DELETE request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`,
             );
 
             throw new ApiRequestException(`Unexpected error: ${(error as Error).message}`);
@@ -87,7 +87,7 @@ export abstract class ApiRequestClient {
             return response.data as T;
         } catch (error) {
             if (axios.isAxiosError(error)) throw new ApiRequestException(
-                `PATCH request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`
+                `PATCH request to ${this.baseURL}${endpoint} failed with status ${error.status}: ${error}`,
             );
 
             throw new ApiRequestException(`Unexpected error: ${(error as Error).message}`);
