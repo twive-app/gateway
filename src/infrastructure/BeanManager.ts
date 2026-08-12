@@ -1,4 +1,5 @@
 import type {FastifyInstance, FastifyRequest, FastifyReply} from "fastify";
+import {CronJob} from "cron";
 
 interface PostConstructorDefinition {
     classToken: string;
@@ -16,6 +17,13 @@ interface RouteDefinition {
     handler: (req: FastifyRequest, reply: FastifyReply) => any;
 }
 
+interface CronDefinition {
+    classToken: string;
+    methodName: string;
+    cronTime: string;
+    handler: () => void | Promise<void>;
+}
+
 type BeansMap = Map<string, object>;
 type PostConstructorsMap = Map<string, PostConstructorDefinition>;
 
@@ -30,6 +38,7 @@ export class BeanManager {
     private static beansMap: BeansMap = new Map<string, object>();
     private static postConstructors: PostConstructorsMap = new Map<string, PostConstructorDefinition>();
     private static routes: RouteDefinition[] = [];
+    private static crons: CronDefinition[] = [];
 
     public static registerBean(token: string, instance: object): void {
         this.beansMap.set(token.toUpperCase(), instance);
@@ -53,6 +62,8 @@ export class BeanManager {
             const boundFn: () => (void|Promise<void>) = def.handler.bind(instance);
             boundFn();
         }
+
+        this.registerCrons();
     }
 
     public static triggerGetters(key: string, instance: any): void {
@@ -80,6 +91,34 @@ export class BeanManager {
                 const boundHandler: (req: FastifyRequest, reply: FastifyReply) => any = route.handler.bind(instance);
                 return await boundHandler(request, reply);
             });
+        }
+    }
+
+    public static addCron(def: CronDefinition): void {
+        this.crons.push(def);
+    }
+
+    private static registerCrons(): void {
+        for (const cronDef of this.crons) {
+            const instance: any = this.getBean<any>(cronDef.classToken);
+            const boundFn: () => (void | Promise<void>) = cronDef.handler.bind(instance);
+
+            try {
+                new CronJob(
+                    cronDef.cronTime,
+                    async (): Promise<void> => {
+                        try {
+                            await boundFn();
+                        } catch (error) {
+                            throw new BeanException(`Error executing cron for ${cronDef.classToken}.${cronDef.methodName}: ${(error as Error).message}`);
+                        }
+                    },
+                    null,
+                    true,
+                );
+            } catch (error) {
+                throw new BeanException(`Error registering cron for ${cronDef.classToken}.${cronDef.methodName}: ${(error as Error).message}`);
+            }
         }
     }
 }
@@ -150,6 +189,20 @@ export function Route(method: RouteHttpMethod, path: string): Route {
             httpMethod: method,
             path,
             handler: descriptor.value,
+        });
+    };
+}
+
+type Cron = (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
+export function Cron(cronTime: string): Cron {
+    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor): void {
+        const classToken: any = target.constructor.name.toUpperCase();
+
+        BeanManager.addCron({
+            classToken,
+            methodName: propertyKey,
+            cronTime: cronTime,
+            handler: descriptor.value
         });
     };
 }
