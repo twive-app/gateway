@@ -24,6 +24,17 @@ interface CronDefinition {
     handler: () => void | Promise<void>;
 }
 
+interface ShutdownHookDefinition {
+    classToken: string;
+    methodName: string;
+    handler: () => void | Promise<void>;
+}
+
+export interface ShutdownHooks {
+    name: string;
+    hook: () => void | Promise<void>;
+}
+
 type BeansMap = Map<string, object>;
 type PostConstructorsMap = Map<string, PostConstructorDefinition>;
 
@@ -39,6 +50,7 @@ export class BeanManager {
     private static postConstructors: PostConstructorsMap = new Map<string, PostConstructorDefinition>();
     private static routes: RouteDefinition[] = [];
     private static crons: CronDefinition[] = [];
+    private static shutdownHooks: ShutdownHookDefinition[] = [];
 
     public static registerBean(token: string, instance: object): void {
         this.beansMap.set(token.toUpperCase(), instance);
@@ -120,6 +132,21 @@ export class BeanManager {
                 throw new BeanException(`Error registering cron for ${cronDef.classToken}.${cronDef.methodName}: ${(error as Error).message}`);
             }
         }
+    }
+
+    public static addShutdownHook(def: ShutdownHookDefinition): void {
+        this.shutdownHooks.push(def);
+    }
+
+    public static getRegisteredShutdownHooks(): ShutdownHooks[] {
+        return this.shutdownHooks.map((def: ShutdownHookDefinition): ShutdownHooks => {
+            const instance: any = this.getBean<any>(def.classToken);
+
+            return {
+                name: `${def.classToken}.${def.methodName}`,
+                hook: def.handler.bind(instance)
+            };
+        });
     }
 }
 
@@ -206,6 +233,20 @@ export function Cron(cronTime: string): Cron {
         });
     };
 }
+
+type ShutdownHook = (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
+export function ShutdownHook(): ShutdownHook {
+    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor): void {
+        const classToken: any = target.constructor.name.toUpperCase();
+
+        BeanManager.addShutdownHook({
+            classToken,
+            methodName: propertyKey,
+            handler: descriptor.value
+        });
+    };
+}
+
 
 export type GetBean = <T>(token: string) => T;
 export const getBean: GetBean = BeanManager.getBean.bind(BeanManager);
