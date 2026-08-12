@@ -4,7 +4,7 @@ import {Logger} from "@utils/Logger.ts";
 class LifecycleException extends Error {
     constructor(message: string) {
         super(message);
-        this.name = "LifecycleException";
+        this.name = "LifecycleError";
     }
 }
 

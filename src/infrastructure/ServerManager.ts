@@ -8,7 +8,7 @@ import type {Logger} from "@utils/Logger.ts";
 class ServerException extends Error {
     constructor(message: string) {
         super(message);
-        this.name = "ServerException";
+        this.name = "ServerError";
     }
 }
 
