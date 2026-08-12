@@ -54,7 +54,7 @@ export class Logger {
 
 export enum LogLevel {
     INFO = "#3ae1ff",
-    WARNING = "#fcb83a",
+    WARNING = "#fca13a",
     ERROR = "#fc3a4a",
     SUCCESS = "#3afc77",
     DEBUG = "#d24cff",
@@ -66,4 +66,5 @@ export enum LogThematic {
     REDIS = "#e74c3c",
     SERVER = "#b9ff4f",
     TWITCH = "#9146ff",
+    GATEWAY = "#ffcc5d",
 }

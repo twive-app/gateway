@@ -34,8 +34,6 @@ export class ConfigManager {
     }
 }
 
-export const isDevMode: boolean = process.env.ENVIRONMENT === "dev";
-
 export const configSchema= z.object({
     postgres: z.object({
         host: z.string(),
@@ -56,6 +54,9 @@ export const configSchema= z.object({
         cors: z.object({
             origin: z.array(z.string()),
         }),
+    }),
+    gateway: z.object({
+        port: z.number(),
     }),
     logging: z.object({
         debug: z.boolean(),

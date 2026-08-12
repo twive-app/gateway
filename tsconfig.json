@@ -31,6 +31,7 @@
       "@infra/*": ["src/infrastructure/*", "src/infrastructure/db/*"],
       "@utils/*": ["src/utils/*"],
       "@twitch/*": ["src/twitch/*", "src/twitch/services/*"],
+      "@sdk/*": ["src/sdk/*", "src/sdk/services/*"],
     },
   },
 }

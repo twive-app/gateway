@@ -7,6 +7,7 @@ import "@utils/Logger";
 import "@infra/ServerManager";
 import "@twitch/TwitchWebhookService";
 import "@infra/LifecycleManager";
+import "@sdk/GatewayService";
 
 import {Autowired, MainClass} from "@infra/BeanManager.ts";
 import type {Logger} from "@utils/Logger.ts";
