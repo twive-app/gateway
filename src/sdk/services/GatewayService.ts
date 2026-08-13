@@ -10,10 +10,12 @@ enum GatewayOpCode {
     HEARTBEAT = 2,
     HEARTBEAT_ACK = 3,
     INVALID_SESSION = 4,
+    DISPATCH = 5,
 }
 
 interface GatewayPayload<T = any> {
     op: GatewayOpCode;
+    t?: string;
     d?: T;
 }
 
@@ -195,5 +197,22 @@ export class GatewayService {
 
             socket.close(4002, "Client not identified within 30 seconds.");
         }, 30000); // 30 seconds
+    }
+
+    public broadcast(applicationId: string, eventName: string, data: unknown): void {
+        const clients: Set<SocketClient>|undefined = this.connections.get(applicationId);
+        if (!clients || clients.size === 0) return;
+
+        const payload: GatewayPayload = {
+            op: GatewayOpCode.DISPATCH,
+            t: eventName,
+            d: data
+        };
+
+        clients.forEach((socket: SocketClient): void => {
+            if (socket.readyState === WebSocket.OPEN) this.sendPayload(socket, payload);
+        });
+
+        this.logger.info("GATEWAY", `Dispatched '${eventName}' to ${clients.size} SDK instances of App ${applicationId}`);
     }
 }
