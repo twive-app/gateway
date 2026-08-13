@@ -4,8 +4,8 @@ import "@infra/ConfigManager";
 import "@infra/DatabaseManager";
 import "@infra/RedisManager";
 import "@utils/Logger";
-import "@infra/ServerManager";
 import "@twitch/TwitchWebhookService";
+import "@infra/ServerManager";
 import "@infra/LifecycleManager";
 import "@sdk/GatewayService";
 
