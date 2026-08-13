@@ -7,7 +7,7 @@ interface DateFormatterOptions {
 
 const defaultOptions: DateFormatterOptions = {
     schema: "dd-MM-yyyy HH:mm:ss",
-    timezone: "Europe/Berlin",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC",
 };
 
 export function formatDate(date: Date, options?: DateFormatterOptions): string {
