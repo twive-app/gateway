@@ -12,7 +12,7 @@ export abstract class ApiRequestClient {
     protected client!: AxiosInstance;
     protected baseURL!: string;
 
-    protected init(baseURL: string, defaultConfig: AxiosRequestConfig = {}): void {
+    protected constructor(baseURL: string, defaultConfig: AxiosRequestConfig = {}) {
         this.baseURL = baseURL;
         this.client = axios.create({
             baseURL,
