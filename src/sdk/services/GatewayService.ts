@@ -5,10 +5,10 @@ import {ConfigManager} from "@infra/ConfigManager.ts";
 import {Logger} from "@utils/Logger.ts";
 
 enum GatewayOpCode {
-    HELLO = 0,
-    HEARTBEAT = 1,
-    HEARTBEAT_ACK = 2,
-    IDENTIFY = 3,
+    IDENTIFY = 0,
+    HELLO = 1,
+    HEARTBEAT = 2,
+    HEARTBEAT_ACK = 3,
     INVALID_SESSION = 4,
 }
 
@@ -18,11 +18,11 @@ interface GatewayPayload<T = any> {
 }
 
 interface SocketClient extends WebSocket {
-    id: string;
-    isAlive: boolean;
-    identified: boolean;
-    applicationId: string;
-    identifyTimeout: NodeJS.Timeout|undefined;
+    id?: string;
+    isAlive?: boolean;
+    identified?: boolean;
+    identifyTimeout?: NodeJS.Timeout;
+    applicationId?: string;
 }
 
 class GatewayException extends Error {
@@ -55,51 +55,39 @@ export class GatewayService {
         this.logger.info("GATEWAY", `Ready on port ${port}`);
 
         this.socketServer.on("connection", (socket: SocketClient): void => {
-            socket.id = uuid();
-            socket.isAlive = true;
-
             this.logger.info("GATEWAY", `New client connection established`);
 
-            this.sendPayload(socket, {
-                op: GatewayOpCode.HELLO,
-                d: {
-                    connectionId: socket.id,
-                    heartbeatInterval: 15000,
-                },
-            });
+            socket.id = uuid();
+            socket.isAlive = true;
 
             this.handleEvents(socket);
             this.handleIdentifyTimeout(socket);
         });
     }
 
-    private sendPayload(socket: SocketClient, payload: GatewayPayload): void {
-        if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(payload));
-    }
-
-    private handleDisconnect(socket: SocketClient, code: number, reason: string): void {
-        const clients: Set<SocketClient>|undefined = this.connections.get(socket.applicationId as string);
-        if (!clients) return;
-
-        this.logger.info("GATEWAY", `Client disconnected from application ${socket.applicationId} with code ${code}: ${reason}`);
-
-        clients.delete(socket);
-        if (clients.size === 0) this.connections.delete(socket.applicationId as string);
-    }
-
     private handleEvents(socket: SocketClient): void {
-        socket.on("close", (code: number, reason: Buffer<ArrayBufferLike>): void => {
-            if (socket.applicationId) this.handleDisconnect(socket, code, reason.toString());
+        socket.on("close", (): void => {
+            if (socket.applicationId) this.handleDisconnect(socket);
         });
 
-        socket.on("message", (rawMessage: RawData): void => {
+        socket.on("message", (rawData: RawData): void => {
             try {
-                const payload: GatewayPayload = JSON.parse(rawMessage.toString());
+                const payload: GatewayPayload = JSON.parse(rawData.toString());
                 this.handleSocketPayload(socket, payload);
             } catch (error) {
                 throw new GatewayException(`Failed to parse payload: ${(error as Error).message}`);
             }
         });
+    }
+
+    private handleDisconnect(socket: SocketClient): void {
+        const clients: Set<SocketClient>|undefined = this.connections.get(socket.applicationId as string);
+        if (!clients) return;
+
+        this.logger.info("GATEWAY", `Client disconnected from application ${socket.applicationId}`);
+
+        clients.delete(socket);
+        if (clients.size === 0) this.connections.delete(socket.applicationId as string);
     }
 
     private handleSocketPayload(socket: SocketClient, payload: GatewayPayload): void {
@@ -121,11 +109,48 @@ export class GatewayService {
         }
     }
 
-    @Cron("*/20 * * * * *")
+    private sendPayload(socket: SocketClient, payload: GatewayPayload): void {
+        if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(payload));
+    }
+
+    private handleIdentify(socket: SocketClient, payload: GatewayPayload): void {
+        if (socket.identifyTimeout) clearTimeout(socket.identifyTimeout);
+
+        const { applicationId } = payload.d || {};
+
+        if (!applicationId) {
+            this.sendPayload(socket, {
+                op: GatewayOpCode.INVALID_SESSION,
+                d: {
+                    message: "Missing applicationId",
+                },
+            });
+
+            return this.logger.warning("GATEWAY", `Client identified without providing applicationId. Terminating connection.`);
+        }
+
+        socket.identified = true;
+        socket.applicationId = applicationId;
+
+        if (!this.connections.has(applicationId)) this.connections.set(applicationId, new Set());
+        this.connections.get(applicationId)!.add(socket);
+
+        this.logger.success("GATEWAY", `Client identified for application ${applicationId}`);
+
+        this.sendPayload(socket, {
+            op: GatewayOpCode.HELLO,
+            d: {
+                connectionId: socket.id,
+                heartbeatInterval: 15000,
+            },
+        });
+    }
+
+    @Cron("*/20 * * * * *") // every 20 seconds
     public checkHeartbeats(): void {
         if (this.connections.size === 0) return;
 
-        this.logger.info("GATEWAY", "Checking heartbeats for all connections");
+        this.logger.info("GATEWAY", "Checking clients heartbeat");
 
         this.connections.forEach((sockets: Set<SocketClient>, applicationId: string): void => {
             sockets.forEach((socket: SocketClient): void => {
@@ -143,56 +168,32 @@ export class GatewayService {
     }
 
     @ShutdownHook()
-    public closeConnectionsOnShutdown(): void {
+    public closeConnections(): void {
         if (this.connections.size === 0) return;
 
         this.logger.info("GATEWAY", "Closing all connections");
 
         this.connections.forEach((sockets: Set<SocketClient>): void => {
-            sockets.forEach((socket: SocketClient): void => socket.close(1012, "Shutdown"));
-        });
-        this.connections.clear();
-    }
-
-    private handleIdentify(socket: SocketClient, payload: GatewayPayload): void {
-        const { applicationId } = payload.d || {};
-
-        if (!applicationId) {
-            this.sendPayload(socket, {
-                op: GatewayOpCode.INVALID_SESSION,
-                d: {
-                    message: "Missing applicationId"
-                }
+            sockets.forEach((socket: SocketClient): void => {
+                socket.close(1012, "Backend is shutting down.")
             });
+        });
 
-            this.logger.warning("GATEWAY", `Client identified without providing applicationId. Terminating connection.`);
-            clearTimeout(socket.identifyTimeout);
-            return;
-        }
-
-        if (socket.identifyTimeout) clearTimeout(socket.identifyTimeout);
-
-        socket.identified = true;
-        socket.applicationId = applicationId;
-
-        if (!this.connections.has(applicationId)) this.connections.set(applicationId, new Set());
-        this.connections.get(applicationId)!.add(socket);
-
-        this.logger.success("GATEWAY", `Client identified for application ${applicationId}`);
+        this.connections.clear();
     }
 
     private handleIdentifyTimeout(socket: SocketClient): void {
         socket.identifyTimeout = setTimeout((): void => {
-            this.logger.warning("GATEWAY", `Client not identified within 10 seconds. Terminating connection.`);
+            this.logger.warning("GATEWAY", `Client not identified within 30 seconds. Terminating connection.`);
 
             this.sendPayload(socket, {
                 op: GatewayOpCode.INVALID_SESSION,
                 d: {
-                    message: "You must send OpCode 3 (IDENTIFY) within 10 seconds.",
+                    message: "You must send OpCode 0 (IDENTIFY) within 30 seconds.",
                 },
             });
 
-            socket.close(4002, "Client not identified within 10 seconds.");
-        }, 10000);
+            socket.close(4002, "Client not identified within 30 seconds.");
+        }, 30000); // 30 seconds
     }
 }
