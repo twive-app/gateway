@@ -19,7 +19,13 @@
       "origin": []
     }
   },
+  "gateway": {
+    "port": 3001
+  },
   "logging": {
     "debug": false
+  },
+  "twitch": {
+    "webhookSecret": ""
   }
 }
