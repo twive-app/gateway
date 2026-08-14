@@ -246,10 +246,3 @@ export function ShutdownHook(): ShutdownHook {
         });
     };
 }
-
-
-export type GetBean = <T>(token: string) => T;
-export const getBean: GetBean = BeanManager.getBean.bind(BeanManager);
-
-export type AfterStart = () => void;
-export const afterStart: AfterStart = BeanManager.afterStart.bind(BeanManager);
