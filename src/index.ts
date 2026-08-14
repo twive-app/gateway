@@ -8,6 +8,8 @@ import "@twitch/TwitchWebhookService";
 import "@infra/ServerManager";
 import "@infra/LifecycleManager";
 import "@sdk/GatewayService";
+import "@twitch/TwitchApiClient";
+import "@twitch/EventSubSubscriptionUtil";
 
 import {Autowired, MainClass} from "@infra/BeanManager.ts";
 import type {Logger} from "@utils/Logger.ts";
