@@ -1,4 +1,4 @@
-import axios, {type AxiosHeaders, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse} from "axios";
+import axios, {type AxiosInstance, type AxiosRequestConfig, type AxiosResponse} from "axios";
 import type {ZodType} from "zod";
 
 export class ApiRequestException extends Error {
@@ -94,7 +94,7 @@ export abstract class ApiRequestClient {
         }
     }
 
-    public setHeaders(headers: AxiosHeaders): void {
+    public setHeaders(headers: Record<string, any>): void {
         this.client.defaults.headers = {
             ...this.client.defaults.headers,
             ...headers,
