@@ -213,6 +213,6 @@ export class GatewayService {
             if (socket.readyState === WebSocket.OPEN) this.sendPayload(socket, payload);
         });
 
-        this.logger.info("GATEWAY", `Dispatched '${eventName}' to ${clients.size} SDK instances of App ${applicationId}`);
+        this.logger.info("GATEWAY", `Dispatched '${eventName}' to ${clients.size} clients of application ${applicationId}`);
     }
 }
