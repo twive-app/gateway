@@ -62,8 +62,11 @@ export const configSchema= z.object({
         debug: z.boolean(),
     }),
     twitch: z.object({
-        webhookSecret: z.string(),
-    })
+        webhook: z.object({
+            callbackURL: z.string(),
+            secretKey: z.string(),
+        }),
+    }),
 });
 
 export type Config = z.infer<typeof configSchema>;

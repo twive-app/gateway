@@ -34,7 +34,7 @@ export class TwitchWebhookService {
         const messageType: EventSubWebhookMessageType = headers[EventSubWebhookRequestHeader.TwitchEventSubMessageType] as EventSubWebhookMessageType;
 
         const rawBody: string = typeof request.body === "string" ? request.body : JSON.stringify(request.body);
-        const secret: string = this.configManager.get().twitch?.webhookSecret || "1234567890";
+        const secret: string = this.configManager.get().twitch?.webhook?.secretKey || "1234567890abcdefghijk";
 
         if (signature && messageId && timestamp) {
             const hmacMessage: string = messageId + timestamp + rawBody;
