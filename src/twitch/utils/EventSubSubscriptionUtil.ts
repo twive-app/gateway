@@ -1,16 +1,20 @@
 import {Bean} from "@infra/BeanManager.ts";
 import {
     AccessTokenScopes,
+    EventSubConduitTransport,
     EventSubSubscriptionRequestBody,
     EventSubSubscriptionType,
-    EventSubTransportMethod,
+    EventSubWebhookTransport,
+    EventSubWebsocketTransport,
     UserUpdateCondition,
     WhisperReceivedCondition
 } from "twitch-dev-types";
 
+type Transport = EventSubWebhookTransport|EventSubWebsocketTransport|EventSubConduitTransport
+
 @Bean()
 export class EventSubSubscriptionUtil {
-    public getScopeBasedSubscriptions(scopes: AccessTokenScopes[], userId: string, conduitId: string, currentSubs?: EventSubSubscriptionRequestBody[]): EventSubSubscriptionRequestBody[] {
+    public getScopeBasedSubscriptions(scopes: AccessTokenScopes[], userId: string, transport: Transport, currentSubs?: EventSubSubscriptionRequestBody[]): EventSubSubscriptionRequestBody[] {
         const subs: EventSubSubscriptionRequestBody[] = [...(currentSubs || [])];
 
         subs.push({
@@ -19,20 +23,14 @@ export class EventSubSubscriptionUtil {
             condition: {
                 broadcaster_user_id: userId,
             },
-            transport: {
-                method: EventSubTransportMethod.Conduit,
-                conduit_id: conduitId,
-            },
+            transport: transport,
         }, {
             type: EventSubSubscriptionType.StreamOffline,
             version: "1",
             condition: {
                 broadcaster_user_id: userId,
             },
-            transport: {
-                method: EventSubTransportMethod.Conduit,
-                conduit_id: conduitId,
-            },
+            transport: transport,
         });
 
         for (const scope of scopes) {
@@ -45,10 +43,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -59,10 +54,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -73,10 +65,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -90,10 +79,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -105,10 +91,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -120,10 +103,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -135,10 +115,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -150,10 +127,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -165,10 +139,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -181,10 +152,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -197,10 +165,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -211,10 +176,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -225,10 +187,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -239,10 +198,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -255,10 +211,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -269,10 +222,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -283,10 +233,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -303,10 +250,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -318,10 +262,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -333,10 +274,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -348,10 +286,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -364,10 +299,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -378,10 +310,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -392,10 +321,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -409,10 +335,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -423,10 +346,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -437,10 +357,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -454,10 +371,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -468,10 +382,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -482,10 +393,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -496,10 +404,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -513,10 +418,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -527,10 +429,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -541,10 +440,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -555,10 +451,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -569,10 +462,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -583,10 +473,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -599,10 +486,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -613,10 +497,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -627,10 +508,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -641,10 +519,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -658,10 +533,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -672,10 +544,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -688,10 +557,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -702,10 +568,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -718,10 +581,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -732,10 +592,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 broadcaster_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -749,10 +606,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -764,10 +618,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -779,10 +630,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -797,10 +645,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -823,10 +668,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -840,10 +682,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -858,10 +697,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -873,10 +709,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -891,10 +724,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -906,10 +736,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -923,10 +750,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -938,10 +762,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -956,10 +777,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -971,10 +789,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -986,10 +801,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -1004,10 +816,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -1019,10 +828,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -1034,10 +840,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 moderator_user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -1052,10 +855,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -1067,10 +867,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -1082,10 +879,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -1097,10 +891,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -1112,10 +903,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -1127,10 +915,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -1142,10 +927,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
 
@@ -1157,10 +939,7 @@ export class EventSubSubscriptionUtil {
                                 broadcaster_user_id: userId,
                                 user_id: userId,
                             },
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -1173,10 +952,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 user_id: userId,
                             } as UserUpdateCondition,
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -1190,10 +966,7 @@ export class EventSubSubscriptionUtil {
                             condition: {
                                 user_id: userId,
                             } as WhisperReceivedCondition,
-                            transport: {
-                                method: EventSubTransportMethod.Conduit,
-                                conduit_id: conduitId,
-                            },
+                            transport: transport,
                         });
                     }
                     break;
@@ -1203,27 +976,21 @@ export class EventSubSubscriptionUtil {
         return subs;
     }
 
-    public getAppSubscriptions(applicationId: string, conduitId: string): EventSubSubscriptionRequestBody[] {
+    public getAppSubscriptions(applicationId: string, transport: Transport): EventSubSubscriptionRequestBody[] {
         return [{
             type: EventSubSubscriptionType.UserAuthorizationGrant,
             version: "1",
             condition: {
                 client_id: applicationId,
             },
-            transport: {
-                method: EventSubTransportMethod.Conduit,
-                conduit_id: conduitId,
-            },
+            transport: transport,
         }, {
             type: EventSubSubscriptionType.UserAuthorizationRevoke,
             version: "1",
             condition: {
                 client_id: applicationId,
             },
-            transport: {
-                method: EventSubTransportMethod.Conduit,
-                conduit_id: conduitId,
-            },
+            transport: transport,
         }];
     }
 }
