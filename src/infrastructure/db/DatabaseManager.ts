@@ -1,7 +1,7 @@
-import {Sequelize} from "sequelize";
+import {DataTypes, Model, ModelStatic, Sequelize} from "sequelize";
 import type {Logger} from "@utils/Logger.ts";
 import type {ConfigManager} from "@infra/ConfigManager.ts";
-import {Autowired, Bean, PostConstruct} from "@infra/BeanManager.ts";
+import {Autowired, Bean, BeanManager, PostConstruct, type RegisteredModelsMap} from "@infra/BeanManager.ts";
 
 class DatabaseException extends Error {
     constructor(message: string) {
@@ -13,7 +13,6 @@ class DatabaseException extends Error {
 @Bean()
 export class DatabaseManager {
     private sequelize!: Sequelize;
-    private modelsInitialized: boolean = false;
 
     @Autowired()
     private configManager!: ConfigManager;
@@ -54,29 +53,84 @@ export class DatabaseManager {
             logging: (msg: string): void => {
                 this.logger.debug("DATABASE", msg);
             },
-            sync: {
-                alter: false,
-                force: false,
-            },
         });
-
-        this.initModels();
 
         try {
             await this.sequelize.authenticate();
             this.logger.success("DATABASE", "Established connection successfully");
+
+            await this.initModels();
+            this.logger.success("DATABASE", "All models synced successfully");
         } catch (error) {
             throw new DatabaseException(`Failed to establish connection: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
-    public getConnection(): Sequelize {
-        return this.sequelize;
+    private async initModels(): Promise<void> {
+        BeanManager.initDatabaseModels(this.sequelize);
+        await this.sequelize.sync({
+            alter: false,
+            force: false
+        });
     }
+}
 
-    private initModels(): void {
-        if (this.modelsInitialized) return;
+export type DefaultOptionalAttributes = "id"|"createdAt"|"updatedAt";
 
-        this.modelsInitialized = true;
-    }
+export interface DefaultAttributes {
+    id: number;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+type DefaultBaseAttributes = {
+    id: {
+        type: DataTypes.IntegerDataTypeConstructor;
+        autoIncrement: true;
+        primaryKey: true;
+    };
+    createdAt: {
+        type: DataTypes.DateDataTypeConstructor;
+        allowNull: false;
+        defaultValue: typeof DataTypes.NOW;
+    };
+    updatedAt: {
+        type: DataTypes.DateDataTypeConstructor;
+        allowNull: false;
+        defaultValue: typeof DataTypes.NOW;
+    };
+};
+
+type InitAttributes<T extends Record<string, any>> = DefaultBaseAttributes & T;
+
+export function initAttributes<T extends Record<string, any>>(customAttributes: T): InitAttributes<T> {
+    return {
+        id: {
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
+            primaryKey: true,
+        },
+        ...customAttributes,
+        createdAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updatedAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    };
+}
+
+export abstract class DatabaseModel<A extends object, CA extends object = A> extends Model<A, CA> {
+    declare id: number;
+    declare createdAt: Date;
+    declare updatedAt: Date;
+}
+
+export interface DatabaseModelStatic<A extends object, CA extends object = A, T extends DatabaseModel<A, CA> = DatabaseModel<A, CA>> extends ModelStatic<T> {
+    initModel(sequelize: Sequelize): ModelStatic<T>;
+    associate?(models: RegisteredModelsMap): void;
 }

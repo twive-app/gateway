@@ -1,5 +1,7 @@
 import type {FastifyInstance, FastifyRequest, FastifyReply} from "fastify";
 import {CronJob} from "cron";
+import type {Sequelize} from "sequelize";
+import type {DatabaseModelStatic} from "@infra/DatabaseManager.ts";
 
 interface PostConstructorDefinition {
     classToken: string;
@@ -7,7 +9,7 @@ interface PostConstructorDefinition {
     handler: () => void|Promise<void>;
 }
 
-type RouteHttpMethod = "get" | "post" | "put" | "delete" | "patch";
+type RouteHttpMethod = "get"|"post"|"put"|"delete"|"patch";
 
 interface RouteDefinition {
     classToken: string;
@@ -35,6 +37,20 @@ export interface ShutdownHooks {
     hook: () => void | Promise<void>;
 }
 
+interface ModelInitDefinition {
+    classToken: string;
+    modelClass: DatabaseModelStatic<any, any, any>
+    handler: (sequelize: Sequelize) => void;
+}
+
+export type RegisteredModelsMap = Record<string, DatabaseModelStatic<any, any, any>>;
+
+interface ModelAssociateDefinition {
+    classToken: string;
+    methodName: string;
+    handler: (models: RegisteredModelsMap) => void;
+}
+
 type BeansMap = Map<string, object>;
 type PostConstructorsMap = Map<string, PostConstructorDefinition>;
 
@@ -51,6 +67,8 @@ export class BeanManager {
     private static routes: RouteDefinition[] = [];
     private static crons: CronDefinition[] = [];
     private static shutdownHooks: ShutdownHookDefinition[] = [];
+    private static modelInits: ModelInitDefinition[] = [];
+    private static modelAssociates: ModelAssociateDefinition[] = [];
 
     public static registerBean(token: string, instance: object): void {
         this.beansMap.set(token.toUpperCase(), instance);
@@ -148,6 +166,35 @@ export class BeanManager {
             };
         });
     }
+
+    public static addModelInit(def: ModelInitDefinition): void {
+        this.modelInits.push(def);
+    }
+
+    public static addModelAssociate(def: ModelAssociateDefinition): void {
+        this.modelAssociates.push(def);
+    }
+
+    public static initDatabaseModels(sequelize: Sequelize): void {
+        const modelMap: RegisteredModelsMap = {};
+
+        for (const def of this.modelInits) {
+            try {
+                def.handler(sequelize);
+                modelMap[def.modelClass.name] = def.modelClass;
+            } catch (error) {
+                throw new BeanException(`Error initializing model ${def.classToken}: ${(error as Error).message}`);
+            }
+        }
+
+        for (const def of this.modelAssociates) {
+            try {
+                def.handler(modelMap);
+            } catch (error) {
+                throw new BeanException(`Error associating model ${def.classToken}.${def.methodName}: ${(error as Error).message}`);
+            }
+        }
+    }
 }
 
 type Bean = (target: any) => void;
@@ -243,6 +290,32 @@ export function ShutdownHook(): ShutdownHook {
             classToken,
             methodName: propertyKey,
             handler: descriptor.value
+        });
+    };
+}
+
+type InitModel = (target: any) => void;
+export function InitModel(): InitModel {
+    return function (target: any): void {
+        const classToken: string = target.name.toUpperCase();
+
+        BeanManager.addModelInit({
+            classToken,
+            modelClass: target as DatabaseModelStatic<any, any, any>,
+            handler: target.initModel.bind(target),
+        });
+    };
+}
+
+type Associate = (target: any, propertyKey: string, descriptor: PropertyDescriptor) => void;
+export function Associate(): Associate {
+    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor): void {
+        const classToken: string = target.constructor.name.toUpperCase();
+
+        BeanManager.addModelAssociate({
+            classToken,
+            methodName: propertyKey,
+            handler: descriptor.value.bind(target.constructor),
         });
     };
 }
