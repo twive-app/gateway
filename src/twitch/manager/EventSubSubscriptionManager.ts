@@ -1,21 +1,83 @@
-import {Bean} from "@infra/BeanManager.ts";
+import {Autowired, Bean} from "@infra/BeanManager.ts";
 import {
-    AccessTokenScopes,
-    EventSubConduitTransport,
-    EventSubSubscriptionRequestBody,
+    APIEndpoint,
     EventSubSubscriptionType,
-    EventSubWebhookTransport,
-    EventSubWebsocketTransport,
-    UserUpdateCondition,
-    WhisperReceivedCondition
+    AccessTokenScopes,
+    type APIEventSubSubscription,
+    type EventSubConduitTransport,
+    type EventSubSubscriptionRequestBody,
+    type EventSubWebhookTransport,
+    type EventSubWebsocketTransport,
+    type RESTPostEventSubSubscriptionResponse,
+    type UserUpdateCondition,
+    type WhisperReceivedCondition, RESTGetEventSubSubscriptionsResponse
 } from "twitch-dev-types";
+import type {ApiRequestClient} from "@utils/ApiRequestClient.ts";
+import type {Logger} from "@utils/Logger.ts";
 
-type Transport = EventSubWebhookTransport|EventSubWebsocketTransport|EventSubConduitTransport
+type Transport = EventSubWebhookTransport|EventSubWebsocketTransport|EventSubConduitTransport;
 
 @Bean()
-export class EventSubSubscriptionUtil {
-    public getScopeBasedSubscriptions(scopes: AccessTokenScopes[], userId: string, transport: Transport, currentSubs?: EventSubSubscriptionRequestBody[]): EventSubSubscriptionRequestBody[] {
-        const subs: EventSubSubscriptionRequestBody[] = [...(currentSubs || [])];
+export class EventSubSubscriptionManager {
+    @Autowired()
+    private apiRequestClient!: ApiRequestClient;
+
+    @Autowired()
+    private logger!: Logger;
+
+    public subscribe(subs: EventSubSubscriptionRequestBody[], accessToken: string, clientId: string): Promise<APIEventSubSubscription[]> {
+        return Promise.all(subs.map(async (sub: EventSubSubscriptionRequestBody): Promise<APIEventSubSubscription> => {
+            try {
+                const response: RESTPostEventSubSubscriptionResponse = await this.apiRequestClient.post<RESTPostEventSubSubscriptionResponse>(
+                    APIEndpoint.CreateEventSubSubscription,
+                    sub,
+                    {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Client-Id": clientId,
+                    },
+                );
+
+                this.logger.success("TWITCH", `Subscribed to event ${sub.type} with app ${clientId}`);
+
+                return response.data[0];
+            } catch (error) {
+                throw error;
+            }
+        }));
+    }
+
+    public async getSubscriptions(accessToken: string, clientId: string): Promise<EventSubSubscriptionRequestBody[]> {
+        try {
+            const response: RESTGetEventSubSubscriptionsResponse = await this.apiRequestClient.get<RESTGetEventSubSubscriptionsResponse>(
+                APIEndpoint.GetEventSubSubscriptions,
+                undefined,
+                {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Client-Id": clientId,
+                },
+            );
+
+            return response.data.map((sub: APIEventSubSubscription): EventSubSubscriptionRequestBody => {
+                return {
+                    type: sub.type,
+                    version: sub.version,
+                    condition: sub.condition,
+                    transport: sub.transport as  EventSubConduitTransport,
+                }
+            });
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    public getScopeBasedSubscriptions(
+        scopes: AccessTokenScopes[],
+        clientUserId: string,
+        userId: string,
+        transport: Transport,
+        existingSubs: EventSubSubscriptionRequestBody[]
+    ): EventSubSubscriptionRequestBody[] {
+        const subs: EventSubSubscriptionRequestBody[] = [];
 
         subs.push({
             type: EventSubSubscriptionType.StreamOnline,
@@ -77,7 +139,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -89,7 +151,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -101,7 +163,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -113,7 +175,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -125,7 +187,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -137,7 +199,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -853,7 +915,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -865,7 +927,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -877,7 +939,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -889,7 +951,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -901,7 +963,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -913,7 +975,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -925,7 +987,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -937,7 +999,7 @@ export class EventSubSubscriptionUtil {
                             version: "1",
                             condition: {
                                 broadcaster_user_id: userId,
-                                user_id: userId,
+                                user_id: clientUserId,
                             },
                             transport: transport,
                         });
@@ -973,22 +1035,23 @@ export class EventSubSubscriptionUtil {
             }
         }
 
-        return subs;
+        const existingTypes: Set<string> = new Set(existingSubs.map((sub: EventSubSubscriptionRequestBody): EventSubSubscriptionType => sub.type));
+        return subs.filter((sub: EventSubSubscriptionRequestBody): boolean => !existingTypes.has(sub.type));
     }
 
-    public getAppSubscriptions(applicationId: string, transport: Transport): EventSubSubscriptionRequestBody[] {
+    public getAppSubscriptions(clientId: string, transport: Transport): EventSubSubscriptionRequestBody[] {
         return [{
             type: EventSubSubscriptionType.UserAuthorizationGrant,
             version: "1",
             condition: {
-                client_id: applicationId,
+                client_id: clientId,
             },
             transport: transport,
         }, {
             type: EventSubSubscriptionType.UserAuthorizationRevoke,
             version: "1",
             condition: {
-                client_id: applicationId,
+                client_id: clientId,
             },
             transport: transport,
         }];

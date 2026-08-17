@@ -3,12 +3,15 @@ import type {ConfigManager} from "@infra/ConfigManager.ts";
 import type {FastifyReply, FastifyRequest} from "fastify";
 import type {IncomingHttpHeaders} from "node:http";
 import {
-    EventSubWebhookMessageType, EventSubWebhookRequestHeader, type EventSubWebhookNotificationRequestBody,
-    type EventSubWebhookRevokeSubscriptionRequestBody, type EventSubWebhookVerificationChallengeRequestBody
+    EventSubWebhookMessageType,
+    EventSubWebhookRequestHeader,
+    type EventSubWebhookNotificationRequestBody,
+    type EventSubWebhookRevokeSubscriptionRequestBody,
+    type EventSubWebhookVerificationChallengeRequestBody
 } from "twitch-dev-types";
 import crypto from "crypto";
-import {GatewayService} from "@sdk/GatewayService.ts";
-import {Logger} from "@utils/Logger.ts";
+import type {Logger} from "@utils/Logger.ts";
+import type {TwitchEventManager} from "@twitch/TwitchEventManager.ts";
 
 @Bean()
 export class TwitchWebhookService {
@@ -16,7 +19,7 @@ export class TwitchWebhookService {
     private configManager!: ConfigManager;
 
     @Autowired()
-    private gatewayService!: GatewayService;
+    private twitchEventManager!: TwitchEventManager;
 
     @Autowired()
     private logger!: Logger;
@@ -24,9 +27,9 @@ export class TwitchWebhookService {
     private readonly hmacPrefix: string = "sha256=";
 
     @Route("post", "/twitch/webhook/callback")
-    public async handleCallback(request: FastifyRequest<{ Querystring: { application_id: string } }>, reply: FastifyReply): Promise<FastifyReply> {
+    public async handleCallback(request: FastifyRequest<{ Querystring: { client_id: string } }>, reply: FastifyReply): Promise<FastifyReply> {
         const headers: IncomingHttpHeaders = request.headers;
-        const applicationId: string = request.query.application_id;
+        const clientId: string = request.query.client_id;
 
         const signature: string = headers[EventSubWebhookRequestHeader.TwitchEventSubMessageSignature] as string;
         const messageId: string = headers[EventSubWebhookRequestHeader.TwitchEventSubMessageId] as string;
@@ -45,7 +48,7 @@ export class TwitchWebhookService {
                 return reply.status(403).send();
             }
 
-            let body = typeof request.body === "string" ? JSON.parse(request.body) : request.body;
+            let body: any = typeof request.body === "string" ? JSON.parse(request.body) : request.body;
 
             switch (messageType) {
                 case EventSubWebhookMessageType.WebhookCallbackVerification:
@@ -63,9 +66,7 @@ export class TwitchWebhookService {
                 case EventSubWebhookMessageType.Notification:
                     const notification: EventSubWebhookNotificationRequestBody = body as EventSubWebhookNotificationRequestBody;
 
-                    const eventName: string = notification.subscription.type.toLocaleUpperCase().replaceAll(".", "_");
-                    this.gatewayService.broadcast(applicationId, eventName, notification.event);
-
+                    this.twitchEventManager.handleEventSubEvents(clientId, notification).then();
                     this.logger.info("TWITCH", `Eventsub notification received: ${notification.subscription.type}`);
                     return reply.status(204).send();
 

@@ -7,9 +7,13 @@ import "@utils/Logger";
 import "@twitch/TwitchWebhookService";
 import "@infra/ServerManager";
 import "@infra/LifecycleManager";
-import "@sdk/GatewayService";
-import "@twitch/TwitchApiClient";
-import "@twitch/EventSubSubscriptionUtil";
+import "@gateway/GatewayService";
+import "@utils/ApiRequestClient";
+import "@twitch/EventSubSubscriptionManager";
+import "@twitch/TwitchEventManager";
+import "@twitch/Application";
+import "@twitch/ApplicationManager";
+import "@twitch/ConduitManager";
 
 import {Autowired, MainClass} from "@infra/BeanManager.ts";
 import type {Logger} from "@utils/Logger.ts";

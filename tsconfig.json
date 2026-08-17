@@ -30,8 +30,8 @@
     "paths": {                                           /* A set of entries that re-map imports to additional lookup locations. */
       "@infra/*": ["src/infrastructure/*", "src/infrastructure/db/*"],
       "@utils/*": ["src/utils/*"],
-      "@twitch/*": ["src/twitch/*", "src/twitch/services/*", "src/twitch/utils/*"],
-      "@sdk/*": ["src/sdk/*", "src/sdk/services/*"],
+      "@twitch/*": ["src/twitch/*", "src/twitch/manager/*", "src/twitch/models/*", "src/twitch/services/*", "src/twitch/utils/*"],
+      "@gateway/*": ["src/gateway/*", "src/gateway/services/*"],
     },
   },
 }
