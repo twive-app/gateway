@@ -1,35 +1,78 @@
-import "dotenv/config";
-import "@infra/BeanManager";
-import "@infra/ConfigManager";
-import "@infra/DatabaseManager";
-import "@infra/RedisManager";
-import "@utils/Logger";
-import "@twitch/TwitchWebhookService";
-import "@infra/ServerManager";
-import "@infra/LifecycleManager";
-import "@gateway/GatewayService";
-import "@utils/ApiRequestClient";
-import "@twitch/EventSubSubscriptionManager";
-import "@twitch/TwitchEventManager";
-import "@twitch/Application";
-import "@twitch/ApplicationManager";
-import "@twitch/ConduitManager";
+import "@core/config/ConfigManager";
+import "@core/error/ErrorReporter";
+import "@core/http/HttpClient";
+import "@core/http/HttpProxyService";
+import "@core/logging/Logger";
+import "@core/process/ProcessManager";
+import "@core/redis/RedisClient.ts";
+import "@twitch/app/AppAuthenticator";
+import "@twitch/app/AppSetupService";
+import "@twitch/app/AppStore";
+import "@twitch/eventsub/EventSubConduitManager";
+import "@twitch/eventsub/EventSubMessageHandler";
+import "@twitch/eventsub/EventSubScopeService";
+import "@twitch/eventsub/EventSubSubscriptionManager";
+import "@twitch/eventsub/EventSubWebhookController";
+import "@twitch/eventsub/EventSubWebhookStore";
+import "@twitch/TwitchClient.ts";
+import "@gateway/connection/ConnectionLimitManager";
+import "@gateway/connection/ConnectionRegistry";
+import "@gateway/connection/ConnectionStore";
+import "@gateway/session/SessionDispatcher";
+import "@gateway/session/SessionStore";
+import "@gateway/GatewayHandler";
+import "@gateway/GatewayServer";
+import "@health/HealthCheckService";
+import "@health/HealthPushService";
+import "@health/HealthController";
+import "@core/http/HttpServer";
 
-import {Autowired, MainClass} from "@infra/BeanManager.ts";
-import type {Logger} from "@utils/Logger.ts";
+import {Autowired, MainClass} from "@core/bean/BeanDecorators.ts";
+import {ConfigManager, type ConfigValues} from "@core/config/ConfigManager.ts";
+import type {Logger} from "@core/logging/Logger.ts";
 import packageJson from "../package.json";
+
+async function runHealthcheck(): Promise<number> {
+    try {
+        const {host, port}: ConfigValues["server"] = ConfigManager.load().server;
+        const target: string = host === "0.0.0.0" || host === "::" ? "127.0.0.1" : host;
+        const response: Response = await fetch(`http://${target}:${port}/health`, {signal: AbortSignal.timeout(3000)});
+        if (response.status === 200) return 0;
+
+        console.error(`GET /health answered ${response.status}`);
+    } catch (error) {
+        console.error(`Health check failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    return 1;
+}
+
+const command: string | undefined = process.argv[2];
+
+if (command === "healthcheck") process.exit(await runHealthcheck());
+
+if (command === "--version") {
+    console.log(packageJson.version);
+    process.exit(0);
+}
+
+if (command !== undefined) {
+    console.error(`Unknown command ${command}. Usage: gateway [healthcheck | --version]`);
+    process.exit(1);
+}
 
 @MainClass()
 export class Main {
     @Autowired()
     private logger!: Logger;
 
-    constructor() {
+    public constructor() {
         this.logger.header();
         this.logger.info("SYSTEM", "Starting process...");
-        this.logger.info("SYSTEM", `Backend version: ${packageJson.version || "unknown"}`);
-        this.logger.info("SYSTEM", `Node.js version: ${process.version}`);
-        this.logger.info("SYSTEM", `Environment: ${process.env.ENVIRONMENT ?? "prod"}`);
-        this.logger.info("SYSTEM", "Backend is now running!");
+        this.logger.info("SYSTEM", `Gateway version: ${packageJson.version || "unknown"}`);
+        this.logger.info("SYSTEM", `Bun version: ${Bun.version}`);
+    }
+
+    public onStarted(): void {
+        this.logger.success("SYSTEM", "Gateway is now running!");
     }
 }
