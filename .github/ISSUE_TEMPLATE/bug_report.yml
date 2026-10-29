@@ -1,0 +1,150 @@
+name: Bug report
+description: Something isn't working quite right in the gateway.
+labels: [bug]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bug reports should only be used for reporting issues with how the gateway works. For problems with setting it up, start with the [setup guide](https://github.com/twive-app/gateway/blob/main/docs/SETUP.md) – it has a troubleshooting section. For configuration see the [README](https://github.com/twive-app/gateway/blob/main/README.md), for connecting your client the [gateway documentation](https://github.com/twive-app/gateway/blob/main/docs/GATEWAY.md).
+
+        **Found a security vulnerability?** Please don't open an issue – report it privately: https://github.com/twive-app/gateway/security/advisories/new
+
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current Behavior
+      description: Please provide a clear & concise description of the issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: Please describe what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Please be as detailed as possible – include the payloads your client sent if they matter. Failure to provide steps to reproduce may result in this issue being closed.
+      placeholder: |
+        1. Connect and IDENTIFY with …
+        2. …
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Which part of the gateway is affected? Select all that apply.
+      multiple: true
+      options:
+        - Connecting / IDENTIFY (authentication, READY)
+        - RESUME / replay (missed or duplicated events after reconnecting)
+        - Heartbeats / disconnects (timeouts, unexpected close codes)
+        - Missing events (an EventSub event is not dispatched)
+        - Wrong event data (payload, event name, sequence numbers)
+        - EventSub subscriptions / conduits (errors from the Twitch API)
+        - Webhook (signature, callback verification)
+        - Startup / configuration (environment variables, the gateway does not start)
+        - Redis (connection, stored data)
+        - Docker image / healthcheck, monitoring / health push (GET /health, HEALTH_PUSH_URL)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: gateway-version
+    attributes:
+      label: Gateway Version
+      description: The version from the start log or `gateway --version` (`latest` is not a version).
+      placeholder: 1.2.3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      description: How do you run the gateway?
+      options:
+        - Docker image
+        - docker compose
+        - Release binary
+        - From source
+    validations:
+      required: true
+
+  - type: input
+    id: redis-version
+    attributes:
+      label: Redis Version
+      description: The output of `redis-server --version` or the image tag (`latest` is not a version).
+      placeholder: redis:8.10.3-alpine
+    validations:
+      required: true
+
+  - type: input
+    id: event-types
+    attributes:
+      label: EventSub Types Affected
+      description: Please include the specific EventSub subscription type(s) and version you are running into this bug with.
+      placeholder: channel.chat.message (v1), stream.online (v1)
+
+  - type: input
+    id: close-code
+    attributes:
+      label: Close Code
+      description: If the gateway closed the connection – the [close code](https://github.com/twive-app/gateway/blob/main/docs/GATEWAY.md#close-codes) and reason your client received.
+      placeholder: 4008 Heartbeat timed out
+
+  - type: input
+    id: client
+    attributes:
+      label: Client
+      description: Your own code (language/runtime) or a library (name and version).
+      placeholder: own client (Node.js 24 + ws)
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs
+      description: |
+        Run one of the following commands to collect the logs of the gateway. Starting the gateway with `LOG_DEBUG=true` shows much more detail.
+        Docker: `docker logs --tail 300 <container>`
+        docker compose: `docker compose logs --tail 300 gateway`
+
+        ⚠️ **Remove all secrets before posting:** client secrets, access tokens, `TWITCH_WEBHOOK_SECRET` and Redis passwords.
+      render: bash
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How much does this bug affect you?
+      options:
+        - Low (slightly annoying)
+        - Medium (should be fixed soon)
+        - High (immediate attention needed)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please [search here](https://github.com/twive-app/gateway/issues) to see if an issue already exists for your problem.
+      options:
+        - label: I have searched the existing issues before opening this issue.
+          required: true
+        - label: I have provided all relevant details, including the gateway version, the deployment and the affected EventSub types if this issue is related to events.
+          required: true
+        - label: I have checked the setup guide and the gateway documentation and believe this is a bug in the gateway, and not a configuration issue of my setup.
+          required: true
