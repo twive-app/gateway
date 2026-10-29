@@ -3,7 +3,6 @@ name: Docker Publish
 on:
   push:
     branches:
-      - main
       - dev
   release:
     types:
@@ -11,13 +10,6 @@ on:
   # Weekly rebuild of the latest release with updated base images.
   schedule:
     - cron: '0 0 * * 1'
-  # Test images from any branch: Actions → docker-publisher → Run workflow.
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Image tag, e.g. test-login-fix (empty = test-<branch>). Not allowed: latest, main, dev, alpha, beta, rc, v*"
-        required: false
-        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -49,7 +41,7 @@ jobs:
           echo "version=${LATEST_TAG#v}" >> "$GITHUB_OUTPUT"
 
       - name: Code checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ steps.release_info.outputs.tag || github.ref }}
 
@@ -60,7 +52,6 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           SCHEDULE_VERSION: ${{ steps.release_info.outputs.version }}
           BRANCH: ${{ github.ref_name }}
-          INPUT_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
           SHORT_SHA=$(git rev-parse --short HEAD)
@@ -71,23 +62,11 @@ jobs:
             schedule) echo "version=$SCHEDULE_VERSION" >> "$GITHUB_OUTPUT" ;;
             release) echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT" ;;
             push) echo "version=$BRANCH-$SHORT_SHA" >> "$GITHUB_OUTPUT" ;;
-            workflow_dispatch)
-              # Docker tag: lower case, [a-z0-9._-], at most 128 characters; reserved tags stay with the other triggers.
-              TAG="${INPUT_TAG:-test-$BRANCH}"
-              TAG=$(printf '%s' "$TAG" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^[^a-z0-9]+//' | cut -c1-128)
-              if [ -z "$TAG" ] || [[ "$TAG" =~ ^(latest|main|dev|alpha|beta|rc|v[0-9].*)$ ]]; then
-                echo "::error::Image tag '$TAG' is empty or reserved (latest, main, dev, alpha, beta, rc, v*)"
-                exit 1
-              fi
-              echo "test_tag=$TAG" >> "$GITHUB_OUTPUT"
-              echo "version=test-$SHORT_SHA" >> "$GITHUB_OUTPUT"
-              echo "Test image tag: $TAG"
-              ;;
           esac
 
       - name: Docker metadata
         id: docker_meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: |
@@ -97,7 +76,6 @@ jobs:
             type=raw,value=${{ steps.release_info.outputs.tag }},enable=${{ github.event_name == 'schedule' }}
             type=ref,event=tag
             type=ref,event=branch,enable=${{ github.event_name == 'push' }}
-            type=raw,value=${{ steps.build_info.outputs.test_tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
             type=raw,value=alpha,enable=${{ github.event_name == 'release' && github.event.release.prerelease && contains(github.event.release.tag_name, '-alpha') }}
             type=raw,value=beta,enable=${{ github.event_name == 'release' && github.event.release.prerelease && contains(github.event.release.tag_name, '-beta') }}
             type=raw,value=rc,enable=${{ github.event_name == 'release' && github.event.release.prerelease && contains(github.event.release.tag_name, '-rc') }}
@@ -108,10 +86,9 @@ jobs:
 
       # No QEMU: the Dockerfile cross-compiles on the build platform and the runtime stage has no RUN instructions.
       - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v4
-
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
@@ -121,7 +98,7 @@ jobs:
       # workflow runs from (inside .github, so .dockerignore keeps it out of the build context).
       - name: Check out the stamp-version action
         if: "(github.event_name == 'release' && github.event.action == 'published') || github.event_name == 'schedule'"
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: .github/workflow-actions
           sparse-checkout: .github/actions/stamp-version
@@ -133,7 +110,7 @@ jobs:
           version: ${{ steps.build_info.outputs.version }}
 
       - name: Build and Push (tag)
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         if: "(github.event_name == 'release' && github.event.action == 'published') || github.event_name == 'schedule'"
         with:
           context: .
@@ -148,9 +125,9 @@ jobs:
           cache-from: type=gha,scope=tagged
           cache-to: type=gha,scope=tagged,mode=max
 
-      - name: Build and Push (branch / test)
-        uses: docker/build-push-action@v7
-        if: "github.event_name == 'push' || github.event_name == 'workflow_dispatch'"
+      - name: Build and Push (branch)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        if: "github.event_name == 'push'"
         with:
           context: .
           file: ./Dockerfile
@@ -161,5 +138,5 @@ jobs:
             REVISION=${{ steps.build_info.outputs.sha }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           tags: ${{ steps.docker_meta.outputs.tags }}
-          cache-from: type=gha,scope=${{ github.event_name == 'workflow_dispatch' && 'test' || github.ref_name }}
-          cache-to: type=gha,scope=${{ github.event_name == 'workflow_dispatch' && 'test' || github.ref_name }},mode=max
+          cache-from: type=gha,scope=${{ github.ref_name }}
+          cache-to: type=gha,scope=${{ github.ref_name }},mode=max

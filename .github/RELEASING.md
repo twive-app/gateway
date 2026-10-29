@@ -37,7 +37,8 @@ Development happens on `dev`, releases are cut from `main`:
    smoke-tested against Redis).
 3. Merge with a normal merge commit.
 
-Every push to `main` also builds the Docker image `main` (see [section 5](#5-automatic-builds-without-a-release)).
+`main` gets no Docker image of its own – its releases become `vX.Y.Z` and `latest`. Every push to `dev` builds the
+image `dev` (see [section 5](#5-automatic-builds-without-a-release)).
 
 ## 3. Creating a release
 
@@ -93,43 +94,23 @@ the channel tags only move with the next prerelease of that channel.
 
 | Trigger | Workflow | Result |
 |---|---|---|
-| Push to `main` / `dev` | `docker-publish.yml` | image `main` / `dev` with the version `main-<short sha>` / `dev-<short sha>` |
-| Manual run (*Run workflow*) | `docker-publish.yml` | test image of any branch, see [Test images](#test-images) |
-| Sundays 03:00 UTC | `cleanup-images.yaml` | old test images and unreferenced untagged versions removed, see [Cleanup](#cleanup) |
+| Push to `dev` | `docker-publish.yml` | image `dev` with the version `dev-<short sha>` |
+| Sundays 03:00 UTC | `cleanup-images.yaml` | old untagged image versions removed, see [Cleanup](#cleanup) |
 | Push to `main` / `dev`, pull requests | `build.yaml` | both binaries compiled and smoke-tested (`--version`, start, healthcheck, SIGTERM), uploaded as workflow artifacts |
 | Push to `main` / `dev`, pull requests | `lint.yaml` | typecheck, ESLint, canary version; for pull requests also every commit message (commitlint) |
 | Mondays 00:00 UTC | `docker-publish.yml` | the latest (non-prerelease) release rebuilt with fresh base images: tags `vX.Y.Z` and `latest` |
 
-`skip docker` or `docker skip` in the message of the head commit of a push to `main` or `dev` skips the image build.
-Releases, the weekly rebuild and manual runs always build.
-
-### Test images
-
-To try a branch in a real deployment before it is merged: *Actions* → *docker-publisher* → *Run workflow*, pick the
-branch and optionally an image tag. Without a tag the image is called `test-<branch>` (lower case, other characters
-replaced by `-`, e.g. `feature/Login` → `test-feature-login`); the reserved tags `latest`, `main`, `dev`, `alpha`,
-`beta`, `rc` and `v*` are rejected. The version in the start log and `/health` is `test-<short sha>`. Or with the
-GitHub CLI:
-
-```bash
-gh workflow run docker-publish.yml --ref feature/login -f tag=test-login
-docker run --rm ghcr.io/twive-app/gateway:test-login --version     # test-<short sha>
-```
-
-Running it again with the same tag overwrites the image. Test images are removed automatically 30 days after their
-last push, see [Cleanup](#cleanup).
+`skip docker` or `docker skip` in the message of the head commit of a push to `dev` skips the image build.
+Releases and the weekly rebuild always build.
 
 ### Cleanup
 
-`cleanup-images.yaml` runs every Sunday at 03:00 UTC and removes from GHCR:
+`cleanup-images.yaml` runs every Sunday at 03:00 UTC and removes untagged image versions from GHCR that are older than
+30 days and that no tagged image references – the earlier builds of `dev` and the images replaced by the
+weekly release rebuild.
 
-- test images (all tags start with `test-`) whose last push is older than 30 days,
-- untagged versions older than 30 days that no remaining image references – earlier builds of `main` and `dev`,
-  re-pushed test tags, the images replaced by the weekly release rebuild and the platform manifests of removed test
-  images.
-
-Everything that still has another tag (releases, `latest`, `alpha`/`beta`/`rc`, `main`, `dev`, newer test images)
-stays, including every manifest it references. Images pulled **by digest** (`…@sha256:…`) of an old build stop working
+Every tagged image (releases, `latest`, `alpha`/`beta`/`rc`, `dev`) stays, including every manifest it
+references. Images pulled **by digest** (`…@sha256:…`) of an old build stop working
 after 30 days – pin release tags instead.
 
 Run it by hand under *Actions* → *Cleanup images* → *Run workflow* with a different age (`days`) or as a dry run

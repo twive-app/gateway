@@ -19,8 +19,8 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN bun run typecheck
 
-# Version shown on startup and in GET /health: releases pass the stamped version, main/dev pass <branch>-<sha>,
-# test images test-<sha>, local builds keep the canary version of package.json.
+# Version shown on startup and in GET /health: releases pass the stamped version, dev passes dev-<sha>,
+# local builds keep the canary version of package.json.
 ARG VERSION
 RUN if [ -n "$VERSION" ]; then bun pm pkg set version="$VERSION"; fi
 

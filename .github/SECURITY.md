@@ -22,8 +22,7 @@ Please include as much of the following as you can:
 |---|---|
 | latest release (`vX.Y.Z`) and the `latest` image | ✅ |
 | prereleases (`vX.Y.Z-alpha.N`, `-beta.N`, `-rc.N`) | best effort |
-| `main` image and the `dev` branch (development builds) | best effort |
-| `test-*` images and branches | ❌ – for testing only |
+| `dev` image and branch (development builds) | best effort |
 | older releases | ❌ – please update to the latest release |
 
 ## Scope
