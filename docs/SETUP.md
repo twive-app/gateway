@@ -359,9 +359,9 @@ one executable on `gcr.io/distroless/cc-debian13:nonroot` – no shell, no packa
 | `latest`   | latest published, non-prerelease release; rebuilt weekly (base image) | `1.2.3`                        |
 | `v1.2.3`   | exactly this release (also prereleases like `v1.3.0-rc.1`), rebuilt weekly while it is the latest release | `1.2.3` |
 | `alpha` / `beta` / `rc` | latest prerelease of that channel (e.g. `v1.3.0-beta.2`)  | `1.3.0-beta.2`                 |
-| `dev`      | latest commit on `dev` (development, will break)                      | `1.3.0-dev.<commit>`           |
+| `dev`      | latest commit on `dev` (development, will break)                      | `1.2.3-dev.<commit>`           |
 
-Local builds (`docker compose up --build`) report the version in `package.json`. The version of an image:
+Local builds (`docker compose up --build`) report the version `0.0.0`. The version of an image:
 `docker run --rm ghcr.io/twive-app/gateway:latest --version`.
 
 ## 10. Monitoring

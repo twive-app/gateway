@@ -26,25 +26,40 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
-      # The tag must be exactly "v" + the version in package.json – bump package.json before tagging.
-      - name: Check version
+      # The version comes from the tag: vX.Y.Z or vX.Y.Z-alpha.N / -beta.N / -rc.N, written into package.json.
+      - name: Set version from tag
         id: version
         env:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          VERSION=$(jq -r .version package.json)
-          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
-            echo "::error file=package.json::Invalid version '$VERSION' – use X.Y.Z or X.Y.Z-alpha.N, X.Y.Z-beta.N, X.Y.Z-rc.N"
+          VERSION="${TAG#v}"
+          if ! [[ "$TAG" == v* && "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+            echo "::error::Invalid tag '$TAG' – use vX.Y.Z or vX.Y.Z-alpha.N, vX.Y.Z-beta.N, vX.Y.Z-rc.N"
             exit 1
           fi
-          if [ "$TAG" != "v$VERSION" ]; then
-            echo "::error::Tag $TAG does not match the version $VERSION in package.json – bump package.json, then tag v$VERSION"
-            exit 1
-          fi
+          bun pm pkg set version="$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version $VERSION"
           if [[ "$VERSION" == *-* ]]; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
 
-      # Same flags as the Dockerfile; the version of package.json is embedded (gateway --version, GET /health).
+      # Keeps a state with the real version in the repository: branch release/vX.Y.Z = the tagged commit plus the
+      # version bump of package.json. main and dev keep the placeholder 0.0.0.
+      - name: Create release branch and bump version
+        env:
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          BRANCH="release/$TAG"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git checkout -b "$BRANCH"
+          git add package.json
+          git commit -m "ci(Release): bump version to $VERSION"
+          git push -u origin "$BRANCH"
+
+      # Same flags as the Dockerfile; the version from the tag is embedded (gateway --version, GET /health).
       - name: Compile binaries
         env:
           TAG: ${{ github.ref_name }}

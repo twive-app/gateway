@@ -19,7 +19,8 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN bun run typecheck
 
-# Version shown on startup and in GET /health: the one in package.json; dev images pass <version>-dev.<sha>.
+# Version shown on startup and in GET /health: the publish workflow passes the release tag (or <last tag>-dev.<sha>),
+# local builds keep the placeholder 0.0.0 of package.json.
 ARG VERSION
 RUN if [ -n "$VERSION" ]; then bun pm pkg set version="$VERSION"; fi
 
@@ -48,7 +49,7 @@ LABEL org.opencontainers.image.source="https://github.com/twive-app/gateway" \
       org.opencontainers.image.title="twive-gateway" \
       org.opencontainers.image.description="WebSocket gateway for Twitch EventSub – no webhooks, no conduits, no subscription bookkeeping." \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.version="${VERSION:-local}" \
+      org.opencontainers.image.version="${VERSION:-0.0.0}" \
       org.opencontainers.image.revision="${REVISION}"
 
 WORKDIR /app
