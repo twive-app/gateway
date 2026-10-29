@@ -40,9 +40,27 @@ export default defineConfig(
             "@typescript-eslint/naming-convention": [
                 "error",
                 {
+                    selector: ["objectLiteralProperty", "typeProperty"],
+                    modifiers: ["requiresQuotes"],
+                    format: null,
+                },
+                {
+                    selector: "typeProperty",
+                    filter: {
+                        regex: "^(Querystring|Body|Params|Headers|Reply)$",
+                        match: true,
+                    },
+                    format: ["PascalCase"],
+                },
+                {
                     selector: "variable",
                     format: ["camelCase"],
                     leadingUnderscore: "allow",
+                },
+                {
+                    selector: "variable",
+                    modifiers: ["const", "exported"],
+                    format: ["camelCase", "PascalCase"],
                 },
                 {
                     selector: "class",
@@ -106,6 +124,46 @@ export default defineConfig(
                 }
             ],
             "@typescript-eslint/no-empty-object-type": "off",
+            "@typescript-eslint/no-inferrable-types": "off",
+            "@typescript-eslint/typedef": [
+                "error",
+                {
+                    arrayDestructuring: true,
+                    arrowParameter: true,
+                    memberVariableDeclaration: true,
+                    objectDestructuring: true,
+                    parameter: true,
+                    propertyDeclaration: true,
+                    variableDeclaration: false,
+                },
+            ],
+            "no-restricted-syntax": [
+                "error",
+                {
+                    selector: [
+                        "VariableDeclarator[id.type=\"Identifier\"]",
+                        ":not([id.typeAnnotation])",
+                        ":not(:matches(ForOfStatement, ForInStatement) > VariableDeclaration > VariableDeclarator)",
+                        ":not([init.type=\"TSAsExpression\"][init.typeAnnotation.typeName.name=\"const\"])",
+                        ":not([init.type=\"TSSatisfiesExpression\"])",
+                        ":not([id.name=/Schema$/][init.type=\"CallExpression\"])",
+                    ].join(""),
+                    message: "Variables need an explicit type annotation (see .github/CODEBASE.md → Types and Exports).",
+                },
+            ],
+            "@typescript-eslint/explicit-function-return-type": [
+                "error",
+                {
+                    allowExpressions: false,
+                    allowTypedFunctionExpressions: false,
+                    allowHigherOrderFunctions: false,
+                    allowDirectConstAssertionInArrowFunctions: false,
+                    allowConciseArrowFunctionExpressionsStartingWithVoid: false,
+                    allowFunctionsWithoutTypeParameters: false,
+                    allowIIFEs: false,
+                },
+            ],
+            "@typescript-eslint/explicit-member-accessibility": ["error", {accessibility: "explicit"}],
         },
     },
 );

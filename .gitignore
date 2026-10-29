@@ -4,7 +4,6 @@
 
 # Dependencies
 node_modules/
-package-lock.json
 
 # Configuration and environment files
 config.json
@@ -12,7 +11,3 @@ config.json
 
 # Build output
 out/
-
-# Others
-test/
-tests/

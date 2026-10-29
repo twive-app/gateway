@@ -2,36 +2,37 @@
   "$schema": "https://json.schemastore.org/tsconfig.json",
   "include": ["src/**/*.ts"],
   "compilerOptions": {
-    "target": "esNext",                                  /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
-    "useDefineForClassFields": false,                    /* Emit ECMAScript-standard-compliant class fields. */
-    "experimentalDecorators": true,                      /* Enable experimental support for legacy experimental decorators. */
-    "module": "commonjs",                                /* Specify what module code is generated. */
-    "moduleResolution": "node",                          /* Specify how TypeScript looks up a file from a given module specifier. */
-    "resolveJsonModule": true,                           /* Enable importing .json files. */
-    "outDir": "./out",                                   /* Specify an output folder for all emitted files. */
-    "esModuleInterop": true,                             /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */
-    "forceConsistentCasingInFileNames": true,            /* Ensure that casing is correct in imports. */
-    "strict": true,                                      /* Enable all strict type-checking options. */
-    "noImplicitAny": true,                               /* Enable error reporting for expressions and declarations with an implied 'any' type. */
-    "strictNullChecks": true,                            /* When type checking, take into account 'null' and 'undefined'. */
-    "strictFunctionTypes": true,                         /* When assigning functions, check to ensure parameters and the return values are subtype-compatible. */
-    "strictBindCallApply": true,                         /* Check that the arguments for 'bind', 'call', and 'apply' methods match the original function. */
-    "strictPropertyInitialization": true,                /* Check for class properties that are declared but not set in the constructor. */
-    "strictBuiltinIteratorReturn": true,                 /* Built-in iterators are instantiated with a 'TReturn' type of 'undefined' instead of 'any'. */
-    "noImplicitThis": true,                              /* Enable error reporting when 'this' is given the type 'any'. */
-    "useUnknownInCatchVariables": true,                  /* Default catch clause variables as 'unknown' instead of 'any'. */
-    "alwaysStrict": true,                                /* Ensure 'use strict' is always emitted. */
-    "skipLibCheck": true,                                /* Skip type checking all .d.ts files. */
-    "emitDecoratorMetadata": false,                      /* Emit design-type metadata for decorated declarations in source files. */
-    "allowImportingTsExtensions": true,                  /* Allow imports to include TypeScript file extensions. Requires '--moduleResolution bundler' and either '--noEmit' or '--emitDeclarationOnly' to be set. */
-    "noUnusedLocals": true,                              /* Enable error reporting when local variables aren't read. */
-    "types": ["node"],                                   /* Specify type package names to be included without being referenced in a source file. */
-    "baseUrl": ".",                                      /* Base directory to resolve non-absolute module names. */
-    "paths": {                                           /* A set of entries that re-map imports to additional lookup locations. */
-      "@infra/*": ["src/infrastructure/*", "src/infrastructure/db/*"],
-      "@utils/*": ["src/utils/*"],
-      "@twitch/*": ["src/twitch/*", "src/twitch/manager/*", "src/twitch/models/*", "src/twitch/services/*", "src/twitch/utils/*"],
-      "@gateway/*": ["src/gateway/*", "src/gateway/services/*"],
-    },
-  },
+    "lib": ["ESNext"],
+    "target": "ESNext",
+    "module": "Preserve",
+    "moduleDetection": "force",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "types": ["bun"],
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "emitDecoratorMetadata": false,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "strictBuiltinIteratorReturn": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "noUnusedLocals": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@core/*": ["./src/core/*"],
+      "@gateway/*": ["./src/gateway/*"],
+      "@health/*": ["./src/health/*"],
+      "@twitch/*": ["./src/twitch/*"]
+    }
+  }
 }

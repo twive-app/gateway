@@ -1,64 +1,40 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@twivesdk/backend",
-  "description": "The backend service that connects all twivesdk platforms",
+  "name": "twive-gateway",
+  "description": "WebSocket gateway for Twitch EventSub – no webhooks, no conduits, no subscription bookkeeping",
   "private": true,
   "author": "aysib07 <dev@aysib07.de>",
-  "version": "1.0.0",
+  "license": "MIT",
+  "version": "0.0.0-canary",
+  "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "ts-node -r tsconfig-paths/register src/index.ts",
-    "build": "tsup src/index.ts --format cjs --target node16 --out-dir out --dts",
-    "start": "node out/index.js",
-    "build:start": "npm run build && npm run start",
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --target bun --outdir out",
     "typecheck": "tsc --noEmit",
     "lint:check": "eslint ./src",
-    "lint:fix": "eslint --fix ./src"
+    "lint:fix": "eslint --fix ./src",
+    "lint:commits": "commitlint --from origin/dev --to HEAD"
   },
   "dependencies": {
-    "@fastify/cors": "^11.3.0",
-    "@fastify/formbody": "^8.0.2",
-    "axios": "^1.19.0",
-    "chalk": "^5.6.2",
-    "cron": "^4.4.0",
-    "crypto": "^1.0.1",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "fastify": "^5.11.2",
-    "figlet": "^1.11.4",
-    "pg": "^8.22.0",
-    "pg-hstore": "^2.3.4",
-    "redis": "^6.2.0",
-    "sequelize": "^6.37.8",
-    "tsup": "^8.5.1",
-    "twitch-dev-types": "^1.5.5",
-    "uuid": "^14.0.1",
-    "ws": "^8.21.1",
-    "zod": "^4.4.3"
+    "chalk": "^6.0.1",
+    "croner": "^11.0.0",
+    "figlet": "^1.12.0",
+    "twitch-dev-types": "^1.6.2",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.1",
-    "@commitlint/config-angular": "^21.2.0",
-    "@types/cron": "^2.0.1",
-    "@types/express": "^5.0.6",
-    "@types/figlet": "^1.7.0",
-    "@types/node": "^26.1.2",
-    "@types/uuid": "^10.0.0",
-    "@types/ws": "^8.18.1",
-    "@typescript-eslint/eslint-plugin": "^8.65.0",
-    "@typescript-eslint/parser": "^8.65.0",
-    "eslint": "^10.8.0",
-    "eslint-plugin-unicorn": "^72.0.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.3.0",
-    "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^6.0.3",
-    "typescript-eslint": "^8.65.0"
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-angular": "^21.2.4",
+    "@types/bun": "^1.4.4",
+    "eslint": "^10.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.72.1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/twiveSDK/backend.git"
+    "url": "git+https://github.com/twive-app/gateway.git"
   },
   "commitlint": {
     "extends": [
@@ -94,5 +70,8 @@
         "pascal-case"
       ]
     }
+  },
+  "engines": {
+    "bun": "1.4.4"
   }
 }
