@@ -64,10 +64,17 @@ export class EventSubWebhookController {
         }
 
         if (messageType === EventSubWebhookMessageType.WebhookCallbackVerification) {
-            const callbackVerifyData: EventSubWebhookVerificationChallengeRequestBody = body as EventSubWebhookVerificationChallengeRequestBody;
+            // A subscription with webhook transport sends `subscription` along, the verification of a conduit shard only
+            // `challenge`.
+            const verification: Partial<EventSubWebhookVerificationChallengeRequestBody> = body as Partial<EventSubWebhookVerificationChallengeRequestBody>;
+            if (typeof verification.challenge !== "string" || verification.challenge.length === 0) {
+                this.logger.warning("WEBHOOK", "Webhook verification without challenge");
+                return Response.json({error: "Missing challenge", statusCode: 400}, {status: 400});
+            }
 
-            this.logger.info("WEBHOOK", `Webhook verification challenge received for ${callbackVerifyData.subscription.type}`);
-            return new Response(callbackVerifyData.challenge, {status: 200, headers: {"Content-Type": "text/plain"}});
+            const subject: string = verification.subscription?.type ?? `conduit shard${clientId ? ` of application ${clientId}` : ""}`;
+            this.logger.info("WEBHOOK", `Webhook verification challenge received for ${subject}`);
+            return new Response(verification.challenge, {status: 200, headers: {"Content-Type": "text/plain"}});
         }
 
         if (this.isOutdated(timestamp)) {
