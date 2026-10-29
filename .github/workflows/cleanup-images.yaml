@@ -1,0 +1,109 @@
+name: Cleanup images
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: Remove images older than this many days
+        required: false
+        default: "30"
+        type: string
+      dry_run:
+        description: Only list what would be removed
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: cleanup-images
+
+jobs:
+  cleanup:
+    name: Remove old test and untagged images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Remove images
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          PACKAGE: ${{ github.event.repository.name }}
+          DAYS: ${{ inputs.days || '30' }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+        run: |
+          set -euo pipefail
+
+          if ! [[ "$DAYS" =~ ^[0-9]+$ ]] || [ "$DAYS" -lt 1 ]; then
+            echo "::error::days must be a positive number, got '$DAYS'"
+            exit 1
+          fi
+          if [ "$(gh api "/users/$OWNER" --jq .type)" != "Organization" ]; then
+            echo "::error::Only packages of an organisation are supported"
+            exit 1
+          fi
+
+          image="ghcr.io/${OWNER,,}/$PACKAGE"
+          api="/orgs/$OWNER/packages/container/$PACKAGE/versions"
+          cutoff=$(date -u -d "-$DAYS days" +%s)
+
+          gh api --paginate "$api?per_page=100" | jq -s 'add // []' > versions.json
+          echo "$(jq length versions.json) versions of $image, removing what is older than $DAYS days"
+
+          declare -A protected=()
+          declare -A remove=()
+
+          # Tagged versions: test images older than the cutoff go, everything else stays and protects the manifests
+          # it references. A failing inspect aborts the run (set -e), so nothing referenced is ever removed by mistake.
+          while IFS=$'\t' read -r id digest updated tags; do
+            only_test=true
+            for tag in ${tags//,/ }; do
+              [[ "$tag" == test-* ]] || only_test=false
+            done
+
+            if [ "$only_test" = true ] && [ "$(date -u -d "$updated" +%s)" -lt "$cutoff" ]; then
+              remove[$id]="$digest ($tags, $updated)"
+              continue
+            fi
+
+            protected[$digest]=1
+            referenced=$(docker buildx imagetools inspect --raw "$image@$digest" | jq -r '.manifests[]?.digest')
+            for child in $referenced; do protected[$child]=1; done
+          done < <(jq -r '.[] | select(.metadata.container.tags | length > 0)
+            | [.id, .name, .updated_at, (.metadata.container.tags | join(","))] | @tsv' versions.json)
+
+          # Untagged versions older than the cutoff that no remaining image references.
+          while IFS=$'\t' read -r id digest updated; do
+            [ "$(date -u -d "$updated" +%s)" -lt "$cutoff" ] || continue
+            [ -z "${protected[$digest]:-}" ] || continue
+            remove[$id]="$digest (untagged, $updated)"
+          done < <(jq -r '.[] | select(.metadata.container.tags | length == 0) | [.id, .name, .updated_at] | @tsv' versions.json)
+
+          echo "${#remove[@]} version(s) to remove"
+          failed=0
+          for id in "${!remove[@]}"; do
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "would remove ${remove[$id]}"
+            elif gh api -X DELETE "$api/$id" --silent; then
+              echo "removed ${remove[$id]}"
+            else
+              echo "::warning::Could not remove ${remove[$id]}"
+              failed=$((failed + 1))
+            fi
+          done
+
+          {
+            echo "### Cleanup images"
+            echo "${#remove[@]} version(s) older than $DAYS days $([ "$DRY_RUN" = "true" ] && echo "would be removed (dry run)" || echo "removed"), $failed failed."
+          } >> "$GITHUB_STEP_SUMMARY"

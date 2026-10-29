@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Stamp version
+        uses: ./.github/actions/stamp-version
+        with:
+          version: ${{ github.ref_name }}
+
+      - name: Create release branch and bump version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          BRANCH=release/${TAG}
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git checkout -b "$BRANCH"
+          git push -u origin "$BRANCH"
+          git add package.json
+          git commit -m "ci(release): bump version"
+          git push
+
+      # Same flags as the Dockerfile; the stamped version is embedded (gateway --version, GET /health).
+      - name: Compile binaries
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          for build in x64:bun-linux-x64-baseline arm64:bun-linux-arm64; do
+            arch=${build%%:*}
+            target=${build#*:}
+            bun build src/index.ts --compile --target="$target" \
+              --minify-whitespace --minify-syntax --sourcemap --outfile "gateway-linux-$arch"
+          done
+          test "$(./gateway-linux-x64 --version)" = "${TAG#v}"
+
+      - name: Create checksum
+        run: sha256sum gateway-linux-x64 gateway-linux-arm64 > checksum.txt
+
+      - name: Create release
+        id: create_release
+        uses: softprops/action-gh-release@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          draft: true
+          prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+          files: |
+            gateway-linux-x64
+            gateway-linux-arm64
+            checksum.txt

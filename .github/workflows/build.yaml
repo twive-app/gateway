@@ -1,0 +1,95 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  binary:
+    name: Compile ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            target: bun-linux-x64-baseline
+            platform: linux/amd64
+          - arch: arm64
+            target: bun-linux-arm64
+            platform: linux/arm64
+    services:
+      redis:
+        image: redis:8.10.3-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Compile
+        run: |
+          mkdir -p dist
+          bun build src/index.ts --compile --target=${{ matrix.target }} \
+            --minify-whitespace --minify-syntax --sourcemap --outfile dist/gateway-linux-${{ matrix.arch }}
+
+      # The arm64 binary runs emulated – only this smoke test needs QEMU, the Docker image is cross-compiled.
+      - name: Set up QEMU
+        if: matrix.arch == 'arm64'
+        uses: docker/setup-qemu-action@v4
+
+      # Runs the binary in the runtime base image of the Docker image: --version, start, healthcheck, SIGTERM.
+      - name: Smoke test
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          BINARY: /dist/gateway-linux-${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          IMAGE=gcr.io/distroless/cc-debian13:nonroot
+          OPTS=(--platform "$PLATFORM" --network host -v "$PWD/dist:/dist:ro"
+            -e REDIS_HOST=127.0.0.1
+            -e TWITCH_WEBHOOK_CALLBACK_URL=https://example.com/twitch/webhook/callback
+            -e TWITCH_WEBHOOK_SECRET=smoke-test-secret)
+
+          VERSION=$(docker run --rm "${OPTS[@]}" "$IMAGE" "$BINARY" --version)
+          echo "Version: $VERSION"
+          test "$VERSION" = "$(jq -r .version package.json)"
+
+          docker run -d --name gateway "${OPTS[@]}" "$IMAGE" "$BINARY"
+          healthy=0
+          for _ in $(seq 1 30); do
+            if docker run --rm "${OPTS[@]}" "$IMAGE" "$BINARY" healthcheck; then healthy=1; break; fi
+            sleep 2
+          done
+
+          docker stop --time 10 gateway
+          docker logs gateway
+          test "$healthy" = 1
+          test "$(docker inspect -f "{{.State.ExitCode}}" gateway)" = 0
+          docker logs gateway 2>&1 | grep -q "All shutdown hooks completed"
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: gateway-linux-${{ matrix.arch }}
+          path: dist/gateway-linux-${{ matrix.arch }}
+          retention-days: 7
