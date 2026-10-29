@@ -1,0 +1,6 @@
+# Only what the build stage needs goes into the build context – everything else is excluded by default.
+*
+!package.json
+!bun.lock
+!tsconfig.json
+!src/

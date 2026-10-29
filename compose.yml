@@ -1,0 +1,76 @@
+# twive-gateway – Redis + gateway for self-hosting and local development.
+#   cp .env.example .env    # fill in the REQUIRED block (TWITCH_WEBHOOK_*), secrets stay in .env
+#   docker compose up -d     # published image; `docker compose up --build` builds this repository instead
+#
+# Values in the `gateway` block below override .env. Only set values you really want – an empty value counts as unset
+# and would hide the one from .env. The Redis values work the other way round: .env wins, compose.yml only fills in the
+# bundled Redis when .env leaves them empty. All variables are listed in .env.example and the README.
+
+x-common:
+  gateway:
+    &gateway-environment
+    ENVIRONMENT: "prod"
+    TZ: "UTC"                                   # time zone of log timestamps, e.g. Europe/Berlin
+    LOG_DEBUG: "false"
+    # Required and therefore not set here – they come from .env: TWITCH_WEBHOOK_CALLBACK_URL, TWITCH_WEBHOOK_SECRET.
+    # TRUSTED_PROXIES: "172.16.0.0/12"           # a reverse proxy on this host reaches the gateway via the Docker bridge
+    # GATEWAY_RESUME_TIMEOUT: "120000"          # how long disconnected sessions stay resumable (ms)
+    # GATEWAY_REPLAY_BUFFER_SIZE: "500"
+
+  # Which Redis the gateway uses is decided automatically:
+  #   - REDIS_HOST empty in .env -> the bundled `redis` service below (default)
+  #   - REDIS_HOST set in .env   -> your own Redis (with REDIS_PORT, REDIS_DB, REDIS_USERNAME, REDIS_PASSWORD from .env)
+  # The bundled Redis keeps running unused in the second case – delete the `redis` service and the `depends_on` of the
+  # gateway if you don't want it. The start log shows which Redis is used ("Connected to Redis at …").
+  redis:
+    &redis-environment
+    REDIS_HOST: "${REDIS_HOST:-redis}"
+    REDIS_PORT: "${REDIS_PORT:-6379}"
+    REDIS_DB: "${REDIS_DB:-0}"
+
+#
+# ------------------------------------------------------------------------------------------
+# DANGER ZONE BELOW
+#
+# The remainder of this file likely does not need to be changed. Please only make modifications
+# below if you understand what you are doing.
+#
+
+services:
+  gateway:
+    image: ghcr.io/twive-app/gateway:latest
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      <<: [*gateway-environment, *redis-environment]
+    # Bound to localhost for a reverse proxy on the same host – Docker bypasses host firewalls like ufw, so published
+    # ports would be reachable from the internet. Remove `127.0.0.1:` only if there is no proxy or it runs on another host.
+    ports:
+      - "127.0.0.1:3000:3000"   # HTTP: webhook callback, GET /health
+      - "127.0.0.1:3001:3001"   # WebSocket gateway – clients connect here (behind your domain / reverse proxy)
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 15s
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Bundled Redis, used while REDIS_HOST in .env is empty. No password: reachable only inside the compose network (no
+  # `ports:`) – leave REDIS_USERNAME and REDIS_PASSWORD in .env empty then, otherwise the connection fails (AUTH without
+  # a configured password).
+  redis:
+    image: redis:8.10.3-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  redis-data:
