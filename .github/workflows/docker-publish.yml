@@ -38,7 +38,6 @@ jobs:
             exit 1
           fi
           echo "tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
-          echo "version=${LATEST_TAG#v}" >> "$GITHUB_OUTPUT"
 
       - name: Code checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -50,7 +49,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-          SCHEDULE_VERSION: ${{ steps.release_info.outputs.version }}
+          SCHEDULE_TAG: ${{ steps.release_info.outputs.tag }}
           BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
@@ -58,10 +57,19 @@ jobs:
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
 
+          # Releases (and their weekly rebuild) use the version of package.json, which the release workflow checked
+          # against the tag; dev images append the commit: 1.3.0-dev.abc1234.
+          VERSION=$(jq -r .version package.json)
           case "$EVENT_NAME" in
-            schedule) echo "version=$SCHEDULE_VERSION" >> "$GITHUB_OUTPUT" ;;
-            release) echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT" ;;
-            push) echo "version=$BRANCH-$SHORT_SHA" >> "$GITHUB_OUTPUT" ;;
+            schedule|release)
+              EXPECTED="${RELEASE_TAG:-$SCHEDULE_TAG}"
+              if [ "v$VERSION" != "$EXPECTED" ]; then
+                echo "::error::package.json has $VERSION, but the release is $EXPECTED"
+                exit 1
+              fi
+              echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+              ;;
+            push) echo "version=$VERSION-$BRANCH.$SHORT_SHA" >> "$GITHUB_OUTPUT" ;;
           esac
 
       - name: Docker metadata
@@ -93,21 +101,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Scheduled runs check out the latest release tag, which may predate the action, so fetch it from the ref this
-      # workflow runs from (inside .github, so .dockerignore keeps it out of the build context).
-      - name: Check out the stamp-version action
-        if: "(github.event_name == 'release' && github.event.action == 'published') || github.event_name == 'schedule'"
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          path: .github/workflow-actions
-          sparse-checkout: .github/actions/stamp-version
-
-      - name: Update version in package.json (tag)
-        if: "(github.event_name == 'release' && github.event.action == 'published') || github.event_name == 'schedule'"
-        uses: ./.github/workflow-actions/.github/actions/stamp-version
-        with:
-          version: ${{ steps.build_info.outputs.version }}
 
       - name: Build and Push (tag)
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0

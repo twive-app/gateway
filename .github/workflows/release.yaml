@@ -26,25 +26,25 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
-      - name: Stamp version
-        uses: ./.github/actions/stamp-version
-        with:
-          version: ${{ github.ref_name }}
-
-      - name: Create release branch and bump version
+      # The tag must be exactly "v" + the version in package.json – bump package.json before tagging.
+      - name: Check version
+        id: version
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          BRANCH=release/${TAG}
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git checkout -b "$BRANCH"
-          git push -u origin "$BRANCH"
-          git add package.json
-          git commit -m "ci(release): bump version"
-          git push
+          set -euo pipefail
+          VERSION=$(jq -r .version package.json)
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+            echo "::error file=package.json::Invalid version '$VERSION' – use X.Y.Z or X.Y.Z-alpha.N, X.Y.Z-beta.N, X.Y.Z-rc.N"
+            exit 1
+          fi
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::Tag $TAG does not match the version $VERSION in package.json – bump package.json, then tag v$VERSION"
+            exit 1
+          fi
+          if [[ "$VERSION" == *-* ]]; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
 
-      # Same flags as the Dockerfile; the stamped version is embedded (gateway --version, GET /health).
+      # Same flags as the Dockerfile; the version of package.json is embedded (gateway --version, GET /health).
       - name: Compile binaries
         env:
           TAG: ${{ github.ref_name }}
@@ -68,7 +68,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           draft: true
-          prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+          prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
           files: |
             gateway-linux-x64
             gateway-linux-arm64

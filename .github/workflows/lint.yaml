@@ -19,14 +19,15 @@ jobs:
     steps:
       - name: Code checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # stamp-version replaces exactly "0.0.0-canary" with the tag – any other version makes the release fail
-      - name: Canary version
-        if: ${{ !startsWith(github.head_ref || github.ref_name, 'release/') }}
+      # package.json holds the real version – the release workflow only accepts a tag that matches it.
+      - name: Version format
         run: |
-          if [ "$(jq -r .version package.json)" != "0.0.0-canary" ]; then
-            echo "::error file=package.json::package.json must keep version 0.0.0-canary – the version is set by the release workflow from the tag"
+          VERSION=$(jq -r .version package.json)
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+            echo "::error file=package.json::Invalid version '$VERSION' – use X.Y.Z or X.Y.Z-alpha.N, X.Y.Z-beta.N, X.Y.Z-rc.N"
             exit 1
           fi
+          echo "Version $VERSION"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
