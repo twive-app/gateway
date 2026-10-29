@@ -10,9 +10,60 @@ on:
 permissions:
   contents: read
 
+# A new push to the same pull request cancels the run that is still going; pushes to main/dev always finish.
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # Only changes to the code or the build need a build – documentation-only changes skip it.
+  changes:
+    name: Detect code changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Compare with the base
+        id: diff
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            range="$PR_BASE...$PR_HEAD"
+          else
+            range="$PUSH_BEFORE..$PUSH_AFTER"
+          fi
+
+          # A new branch or a force push has no usable base – build to be safe.
+          if ! files=$(git diff --name-only "$range" 2>/dev/null); then
+            echo "No usable base for $range, building"
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Changed files:"
+          echo "$files"
+          if grep -qE '^(src/|package\.json$|bun\.lock$|tsconfig\.json$|\.github/workflows/build\.yaml$)' <<<"$files"; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No code changes, the build is skipped"
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   binary:
     name: Compile ${{ matrix.arch }}
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -91,3 +142,20 @@ jobs:
           name: gateway-linux-${{ matrix.arch }}
           path: dist/gateway-linux-${{ matrix.arch }}
           retention-days: 7
+
+  # The one check to require in the branch rulesets: green when both binaries built or the build was not needed,
+  # red when a build failed or was cancelled.
+  result:
+    name: Build
+    needs: [changes, binary]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the build result
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          BINARY: ${{ needs.binary.result }}
+        run: |
+          echo "changes: $CHANGES, binary: $BINARY"
+          [ "$CHANGES" = "success" ] || exit 1
+          [ "$BINARY" = "success" ] || [ "$BINARY" = "skipped" ] || exit 1

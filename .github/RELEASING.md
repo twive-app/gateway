@@ -96,7 +96,7 @@ the channel tags only move with the next prerelease of that channel.
 |---|---|---|
 | Push to `dev` | `docker-publish.yml` | image `dev` with the version `dev-<short sha>` |
 | Sundays 03:00 UTC | `cleanup-images.yaml` | old untagged image versions removed, see [Cleanup](#cleanup) |
-| Push to `main` / `dev`, pull requests | `build.yaml` | both binaries compiled and smoke-tested (`--version`, start, healthcheck, SIGTERM), uploaded as workflow artifacts |
+| Push to `main` / `dev`, pull requests | `build.yaml` | both binaries compiled and smoke-tested (`--version`, start, healthcheck, SIGTERM), uploaded as workflow artifacts – skipped when only docs changed; the check `Build` sums it up |
 | Push to `main` / `dev`, pull requests | `lint.yaml` | typecheck, ESLint, canary version; for pull requests also every commit message (commitlint) |
 | Mondays 00:00 UTC | `docker-publish.yml` | the latest (non-prerelease) release rebuilt with fresh base images: tags `vX.Y.Z` and `latest` |
 
